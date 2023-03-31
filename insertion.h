@@ -4,11 +4,8 @@ using namespace pqxx;
 #ifndef _QUERY_FUNCS_
 #define _QUERY_FUNCS_
 
-void addAccount(connection *C, int team_id, int jersey_num, string first_name, string last_name,
-		int mpg, int ppg, int rpg, int apg, double spg, double bpg);
-
-void add_team(connection *C, string name, int state_id, int color_id, int wins, int losses);
-
-void add_state(connection *C, string name);
-
-void add_color(connection *C, string name);
+void addAccount(connection *C, double balance);
+void addPosition(connection *C, string symbol);	
+void addOrder(connection *C, int account_id, int amount, double limit_price, double execute_price, string status, std::time_t time, int position_id);
+bool checkAccount(connection *C, int account_id);
+bool checkPosition(connection *C, string symbol);

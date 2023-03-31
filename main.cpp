@@ -61,22 +61,20 @@ int main (int argc, char *argv[])
   }
 
 
-    try{
-      string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, BANK_ORDER;";
-      /* Create a transactional object. */
-      work W(*C);
-      /* Execute drop */
-      W.exec(dropSql);
-      W.commit();
-      createTables(C);
+  try{
+    string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, BANK_ORDER;";
+    /* Create a transactional object. */
+    work W(*C);
+    /* Execute drop */
+    W.exec(dropSql);
+    W.commit();
+    createTables(C);
   } catch (const std::exception &e){
     cerr << e.what() << std::endl;
     return 1;
   }
 
-
   //Close database connection
   C->disconnect();
-
   return 0;
 }

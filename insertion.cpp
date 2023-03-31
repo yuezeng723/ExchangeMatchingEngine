@@ -24,3 +24,30 @@ string status, std::time_t time, int position_id) {
     W.exec(sql.str());
     W.commit();
 }
+
+// check if the account exists
+bool checkAccount(connection *C, int account_id) {
+    stringstream sql;
+    work W(*C);
+    sql << "SELECT * FROM ACCOUNT WHERE account_id = " << account_id << ";";
+    result R( W.exec(sql.str()) );
+    W.commit();
+    if (R.size() == 0) {
+        return false;
+    }
+    return true;
+}
+
+// check if the position exists
+bool checkPosition(connection *C, string symbol) {
+    stringstream sql;
+    work W(*C);
+    sql << "SELECT * FROM POSITION WHERE symbol = " << W.quote(symbol) << ";";
+    result R( W.exec(sql.str()) );
+    W.commit();
+    if (R.size() == 0) {
+        return false;
+    }
+    return true;
+}
+
