@@ -11,29 +11,34 @@ void createTables(connection *C) {
   string accountSQL =
     "CREATE TABLE ACCOUNT"
     "(account_id SERIAL PRIMARY KEY,"
-    "balance DECIMAL(10,2) NOT NULL);";
+    "balance DECIMAL(10,2) NOT NULL,"
+    "position_id INT NOT NULL,"
+    "FOREIGN KEY(position_id) REFERENCES POSITION(position_id)"
+    "ON DELETE SET NULL ON UPDATE CASCADE);"; 
 
   string positionSQL =
     "CREATE TABLE POSITION"
     "(position_id SERIAL PRIMARY KEY,"
-    "symbol VARCHAR(20) NOT NULL);";
+    "symbol VARCHAR(20) NOT NULL,"
+    "shares INT NOT NULL);"; 
 
   string orderSQL =
-    "CREATE TABLE TRANS_ORDER"
+    "CREATE TABLE BANK_ORDER"
     "(order_id SERIAL PRIMARY KEY,"
+    "transaction_id INT NOT NULL,"
     "account_id INT NOT NULL,"
-    "amount INT NOT NULL,"
+    "status VARCHAR(20) NOT NULL,"
+    "shares INT NOT NULL,"
+    "time TIME,"
     "limit_price DECIMAL(10,2),"
     "execute_price DECIMAL(10,2),"
-    "status VARCHAR(20) NOT NULL,"
-    "time TIME,"
-    "position_id INT NOT NULL,"
-    "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id),"
-    "FOREIGN KEY(position_id) REFERENCES POSITION(position_id)"
+    "symbol VARCHAR(20) NOT NULL,"
+    "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
     "ON DELETE SET NULL ON UPDATE CASCADE);";
+
   
-  W.exec(accountSQL);
   W.exec(positionSQL);
+  W.exec(accountSQL);
   W.exec(orderSQL);
   W.commit();
 }
@@ -57,7 +62,7 @@ int main (int argc, char *argv[])
 
 
     try{
-      string dropSql = "DROP TABLE IF EXISTS ACCOUNT, POSITION, TRANS_ORDER;";
+      string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, BANK_ORDER;";
       /* Create a transactional object. */
       work W(*C);
       /* Execute drop */
