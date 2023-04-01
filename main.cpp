@@ -22,24 +22,33 @@ void createTables(connection *C) {
     "symbol VARCHAR(20) NOT NULL,"
     "shares INT NOT NULL);"; 
 
-  string orderSQL =
-    "CREATE TABLE BANK_ORDER"
-    "(order_id SERIAL PRIMARY KEY,"
+  string openSQL =
+    "CREATE TABLE OPENORDER"
+    "(open_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
-    "account_id INT NOT NULL,"
-    "status VARCHAR(20) NOT NULL,"
+    "shares INT NOT NULL,"
+    "limit_price DECIMAL(10,2),"
+    "symbol VARCHAR(20) NOT NULL;";
+  string executeSQL =
+    "CREATE TABLE EXECUTEORDER"
+    "(execute_id SERIAL PRIMARY KEY,"
+    "transaction_id INT NOT NULL,"
     "shares INT NOT NULL,"
     "time TIME,"
-    "limit_price DECIMAL(10,2),"
-    "execute_price DECIMAL(10,2),"
-    "symbol VARCHAR(20) NOT NULL,"
-    "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
-    "ON DELETE SET NULL ON UPDATE CASCADE);";
+    "execute_price DECIMAL(10,2);";
+  string cancelSQL =
+    "CREATE TABLE CANCELORDER"
+    "(cancel_id SERIAL PRIMARY KEY,"
+    "transaction_id INT NOT NULL,"
+    "shares INT NOT NULL,"
+    "time TIME;";
 
   
   W.exec(positionSQL);
   W.exec(accountSQL);
-  W.exec(orderSQL);
+  W.exec(openSQL);
+  W.exec(executeSQL);
+  W.exec(cancelSQL);
   W.commit();
 }
 
@@ -62,7 +71,7 @@ int main (int argc, char *argv[])
 
 
     try{
-      string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, BANK_ORDER;";
+      string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, OPENORDER, EXECUTEORDER, CACELORDER;";
       /* Create a transactional object. */
       work W(*C);
       /* Execute drop */
