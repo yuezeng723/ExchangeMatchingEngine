@@ -5,5 +5,7 @@
 #include <set>
 #include <exception>
 #include <iostream>
+#include "parser.hpp"
+
 namespace pt = boost::property_tree;
 using namespace std;
