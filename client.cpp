@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <vector>
+#include <fstream>
+
+
 
 int main()
 {
@@ -43,15 +47,27 @@ int main()
 
     freeaddrinfo(host_info_list);
  
-    // send message to server
-    const char *hello = "Hello from client";
-    send(sockfd, hello, strlen(hello), 0);
-    std::cout << "Message sent to server" << std::endl;
-    
-    // receive message from server
-    int valread = read(sockfd, buffer, 1024);
-    std::cout << buffer << std::endl;
-    
+    // send XML file to server
+    std::vector<std::string> filenames = {"createAccount1.xml", "createAccount2.xml"};
+    std::string file_contents;
+    for (const auto& filename : filenames) {
+        std::ifstream file("./data/" + filename);
+        if (file.is_open()) {
+            std::string line;
+            while (std::getline(file, line)) {
+                file_contents += line;
+            }
+            file.close();
+            const char* data = file_contents.c_str();
+            send(sockfd, data, strlen(data), 0);
+
+            int valread = read(sockfd, buffer, 1024);
+            std::cout << buffer << std::endl;
+        } else {
+            std::cerr << "Failed to open file: " << filename << std::endl;
+        }
+    }
+
     // use sockfd for further communication with the server
     close(sockfd);
 

@@ -1,0 +1,11 @@
+264
+<?xml version="1.0" encoding="UTF-8"?>
+<create>
+    <account id="0002" balance="5000"/>
+    <symbol sym="AAPL">
+        <account id="0002">1000</account>
+    </symbol>
+    <symbol sym="TSLA">
+        <account id="0002">2000</account>
+    </symbol>
+</create>
