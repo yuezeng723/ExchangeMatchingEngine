@@ -7,8 +7,8 @@ all: $(TARGETS)
 clean:
 	rm -f $(TARGETS) *~
 
-test: main.cpp
-	$(CC) $(CFLAGS) -o test main.cpp $(EXTRAFLAGS)
+test: main.cpp exercise.h exercise.cpp implement.h implement.cpp insertion.h insertion.cpp
+	$(CC) $(CFLAGS) -o test main.cpp exercise.cpp implement.cpp insertion.cpp $(EXTRAFLAGS)
 	
 client: client.cpp
 	g++ -g -o $@ $<

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <pqxx/pqxx>
 #include <fstream>
-
+#include "exercise.h"
 using namespace std;
 using namespace pqxx;
 
@@ -17,7 +17,7 @@ void createTables(connection *C) {
     "CREATE TABLE POSITION"
     "(position_id SERIAL PRIMARY KEY,"
     "symbol VARCHAR(20) NOT NULL,"
-    "acount_id INT NOT NULL,"
+    "account_id INT NOT NULL,"
     "shares INT NOT NULL,"
     "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
     "ON DELETE SET NULL ON UPDATE CASCADE);"; 
@@ -28,20 +28,20 @@ void createTables(connection *C) {
     "transaction_id INT NOT NULL,"
     "shares INT NOT NULL,"
     "limit_price DECIMAL(10,2),"
-    "symbol VARCHAR(20) NOT NULL;";
+    "symbol VARCHAR(20) NOT NULL);";
   string executeSQL =
     "CREATE TABLE EXECUTEORDER"
     "(execute_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
     "shares INT NOT NULL,"
     "time TIME,"
-    "execute_price DECIMAL(10,2);";
+    "execute_price DECIMAL(10,2));";
   string cancelSQL =
     "CREATE TABLE CANCELORDER"
     "(cancel_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
     "shares INT NOT NULL,"
-    "time TIME;";
+    "time TIME);";
 
   
   W.exec(accountSQL);
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
 
   try{
-      string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, OPENORDER, EXECUTEORDER, CACELORDER;";
+      string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, openorder, executeorder, cancelorder;";
       /* Create a transactional object. */
       work W(*C);
       /* Execute drop */
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
     cerr << e.what() << std::endl;
     return 1;
   }
-
+  exercise(C);
   //Close database connection
   C->disconnect();
 }

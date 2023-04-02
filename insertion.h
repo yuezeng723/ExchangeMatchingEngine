@@ -1,8 +1,11 @@
+#include <ctime>
+#include <string>
+#include <iostream>
+#include <pqxx/pqxx>
 using namespace std;
 using namespace pqxx;
-#include <ctime>
-#ifndef _QUERY_FUNCS_
-#define _QUERY_FUNCS_
+#ifndef _INSERTION_
+#define _INSERTION_
 
 void addAccount(connection *C, int account_id, double balance);
 void updateAccount(connection *C, int account_id, double balance);
