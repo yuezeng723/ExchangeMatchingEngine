@@ -43,10 +43,8 @@ void createTables(connection *C) {
   W.commit();
 }
 
-int main (int argc, char *argv[]) 
-{
+int main(int argc, char* argv[]) {
   connection *C;
-
   try{
     C = new connection("dbname=exchange_matching user=postgres password=ece568");
     if (C->is_open()) {
@@ -76,5 +74,4 @@ int main (int argc, char *argv[])
 
   //Close database connection
   C->disconnect();
-  return 0;
 }
