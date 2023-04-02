@@ -17,7 +17,7 @@ void doOrder(connection *C, int transaction_id, int account_id, string symbol, i
   // if(orderCheck(*C, account_id, amount, limit)) return; //change!!
 //reduce account balance
   //updateAccount need to be done after checking account valid
-  updatePosition(C, symbol, account_id, amount);
+  updateAccount(C, account_id, -amount*limit);
   result R = orderMatch(C, symbol, amount, limit);
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(amount != 0) {
@@ -26,16 +26,19 @@ void doOrder(connection *C, int transaction_id, int account_id, string symbol, i
         addExecuteOrder(C, c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
         deleteOpenOrder(C, c[1].as<int>());
         addExecuteOrder(C, transaction_id, -shares, std::time(nullptr), c[3].as<double>());
+        updatePosition(C, symbol, account_id, -shares);
         amount += shares;
       } else if(abs(shares) > abs(amount)) {
         addExecuteOrder(C, c[0].as<int>(), -amount, std::time(nullptr), c[3].as<double>());
         addExecuteOrder(C, transaction_id, amount, std::time(nullptr), c[3].as<double>());
         updateOpenOrder(C, c[1].as<int>(), amount+shares);
+        updatePosition(C, symbol, account_id, amount);
         amount = 0;
       } else {
         addExecuteOrder(C, c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
         deleteOpenOrder(C, c[1].as<int>());
         addExecuteOrder(C, transaction_id, amount, std::time(nullptr), c[3].as<double>());
+        updatePosition(C, symbol, account_id, amount);
         amount = 0;
       }
     }
@@ -69,13 +72,14 @@ void doQuery(connection *C, int transaction_id) {
   result Rcancel(N.exec(sql));
 }
 
-void doCancel(connection *C, int transaction_id) { //cancel shares combine
+void doCancel(connection *C, int transaction_id, int account_id) { //cancel shares combine
   nontransaction N(*C);
   stringstream sql;
-  sql << "SELECT open_id, shares, time FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
+  sql << "SELECT open_id, shares, limit_price, time, symbol FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
   result R( N.exec(sql));
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
-    addCancelOrder(C, transaction_id, c[1], c[2]);
+    updateAccount(C, account_id, c[1]*c[2]);
+    addCancelOrder(C, transaction_id, c[1], c[3]);
     deleteOpenOrder(C, c[0]);
   }
   //add update account

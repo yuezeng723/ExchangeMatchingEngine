@@ -6,10 +6,10 @@ void addAccount(connection *C, int account_id, double balance) {
     W.exec(sql.str());
     W.commit();
 }
-void updateAccount(connection *C, int account_id, double balance) {    
+void updateAccount(connection *C, int account_id, double addon) {    
     stringstream sql;
     work W(*C);
-    sql << "UPDATE ACCOUNT SET balance=" << shares << " WHERE account_id=" << account_id << ";";
+    sql << "UPDATE ACCOUNT SET balance=balance+" << addon << " WHERE account_id=" << account_id << ";";
     W.exec(sql.str());
     W.commit();
 }
