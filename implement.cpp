@@ -1,48 +1,46 @@
-
+void doCreate(connection *C, int account_id, double balance, string sym, int shares) {
+  addAccount(C, account_id, balance);
+  addPosition(C, sym, account_id, shares);
+}
+// only check for buy right now
 bool orderCheck(connection *C, int account_id, int amount, double limit) {
   nontransaction N(*C);
   stringstream sql;
   sql << "SELECT ACCOUNT.balance FROM ACCOUNT WHERE account_id=" << account_id << ";";
   result R( N.exec(sql));
   result::const_iterator c = R.begin();
-  if(c[0].asint<>() < amount * limit) return true;
+  if(c[0].asint<>() < amount * limit || c == R.end()) return true;
   return false;
-}
+} //+-
+
 void doOrder(connection *C, int transaction_id, int account_id, string symbol, int amount, double limit) {
-  if(orderCheck(*C, account_id, amount, limit)) return;
+  // if(orderCheck(*C, account_id, amount, limit)) return; //change!!
+//reduce account balance
+  //updateAccount need to be done after checking account valid
+  updatePosition(C, symbol, account_id, amount);
   result R = orderMatch(C, symbol, amount, limit);
-  
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(amount != 0) {
       int shares = c[2].as<int>();
       if(abs(shares) < abs(amount)) {
-        executeOrder(C, c[1].as<int>(), shares);
-        addOrder(C, transaction_id, "executed", -shares, std::time(nullptr), limit,\
-         c[4].as<double>(), symbol);
-        addOrder(C, transaction_id, "open", amount+shares, std::time(nullptr), limit,\
-         limit, symbol);
+        addExecuteOrder(C, c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
+        deleteOpenOrder(C, c[1].as<int>());
+        addExecuteOrder(C, transaction_id, -shares, std::time(nullptr), c[3].as<double>());
+        amount += shares;
       } else if(abs(shares) > abs(amount)) {
-        executeOrder(C, c[1].as<int>(), -amount);
-        addOrder(C, c[0].as<int>(), "open", shares + amount, std::time(nullptr), limit,\
-         limit, symbol);
-        addOrder(C, transaction_id, "executed", amount, std::time(nullptr), limit,\
-         c[4].as<double>(), symbol);
+        addExecuteOrder(C, c[0].as<int>(), -amount, std::time(nullptr), c[3].as<double>());
+        addExecuteOrder(C, transaction_id, amount, std::time(nullptr), c[3].as<double>());
+        updateOpenOrder(C, c[1].as<int>(), amount+shares);
+        amount = 0;
       } else {
-        executeOrder(C, c[1].as<int>(), shares);
-        addOrder(C, transaction_id, "executed", amount, std::time(nullptr), limit,\
-         c[4].as<double>(), symbol);
+        addExecuteOrder(C, c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
+        deleteOpenOrder(C, c[1].as<int>());
+        addExecuteOrder(C, transaction_id, amount, std::time(nullptr), c[3].as<double>());
+        amount = 0;
       }
     }
   }
-  addOrder(C, transaction_id, status, shares, time, limit_price, execute_price, symbol);
-}
-void executeOrder(connection *C, int order_id, int shares) {
-    work W(*C);
-    stringstream query;
-    query << "UPDATE BANK_ORDER SET status=" << W.quote("executed") << ", shares=" << shares\
-    << " WHERE order_id=" << order_id << ";";
-    W.exec(sql.str());
-    W.commit();
+  if(amount != 0) addOpenOrder(C, transaction_id, amount, limit, symbol);
 }
 result orderMatch(connection *C, string symbol, int amount, double limit)
 {
@@ -50,13 +48,11 @@ result orderMatch(connection *C, string symbol, int amount, double limit)
   stringstream sql;
   string op = "open";
   if(amount < 0) {
-    sql << "SELECT transaction_id, BANK_ORDER.order_id, BANK_ORDER.shares, BANK_ORDER.limit_price FROM BANK_ORDER,ACCOUNT,POSITION WHERE \
-    POSITION.symbol=" << symbol << " AND BANK_ORDER.status=" << N.quote(op) <<" AND BANK_ORDER.share>0 AND BANK_ORDER.limit_price>" << limit << \
-    "ORDER BY BANK_ORDER.limit_price ASC;";
+    sql << "SELECT transaction_id, open_id, shares, limit_price FROM OPENORDER WHERE \
+    symbol=" << symbol << " AND shares>0 AND limit_price>" << limit << "ORDER BY limit_price DESC, order_id ASC;";
   } else {
-      sql << "SELECT transaction_id, BANK_ORDER.order_id, BANK_ORDER.shares, BANK_ORDER.limit_price FROM BANK_ORDER,ACCOUNT,POSITION WHERE \
-      POSITION.symbol=" << symbol << " AND BANK_ORDER.status=" << N.quote(op) <<" AND BANK_ORDER.share<0 AND BANK_ORDER.limit_price<" << limit << \
-      "ORDER BY limit_price ASC, order_id ASC;";
+    sql << "SELECT transaction_id, open_id, shares, limit_price FROM OPENORDER WHERE \
+    symbol=" << symbol << " AND shares<0 AND limit_price<" << limit << "ORDER BY limit_price ASC, order_id ASC;";
   }
   result R( N.exec(sql));
   return R;
@@ -65,23 +61,22 @@ result orderMatch(connection *C, string symbol, int amount, double limit)
 void doQuery(connection *C, int transaction_id) {
   nontransaction N(*C);
   stringstream sql;
-  sql << "SELECT BANK_ORDER.shares, BANK_ORDER.execute_price, BANK_ORDER.time FROM \
-  BANK_ORDER WHERE BANK_ORDER.transaction_id=" << transaction_id << ";";
-  result R( N.exec(sql));
-  return R;
+  sql << "SELECT shares FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
+  result Ropen(N.exec(sql));
+  sql << "SELECT shares, time FROM CANCELORDER WHERE transaction_id=" << transaction_id << ";";
+  result Rexecute(N.exec(sql));
+  sql << "SELECT shares, execute_price, time FROM EXECUTEORDER WHERE transaction_id=" << transaction_id << ";";
+  result Rcancel(N.exec(sql));
 }
-void doCancel(connection *C, int transaction_id) {
+
+void doCancel(connection *C, int transaction_id) { //cancel shares combine
   nontransaction N(*C);
   stringstream sql;
-  sql << "SELECT BANK_ORDER.order_id,BANK_ORDER.shares,BANK_ORDER.time FROM BANK_ORDER WHERE BANK_ORDER.transaction_id=" \
-  << transaction_id << " AND BANK_ORDER.status=" << N.quote("open") << ";";
+  sql << "SELECT open_id, shares, time FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
   result R( N.exec(sql));
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
-    work W(*C);
-    stringstream query;
-    query << "UPDATE BANK_ORDER SET status=" << W.quote("canceled") << " WHERE order_id =" << c[0].asint<>() << ";";
-    W.exec(sql.str());
-    W.commit();
+    addCancelOrder(C, transaction_id, c[1], c[2]);
+    deleteOpenOrder(C, c[0]);
   }
-  return R;
+  //add update account
 }

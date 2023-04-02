@@ -11,16 +11,16 @@ void createTables(connection *C) {
   string accountSQL =
     "CREATE TABLE ACCOUNT"
     "(account_id SERIAL PRIMARY KEY,"
-    "balance DECIMAL(10,2) NOT NULL,"
-    "position_id INT NOT NULL,"
-    "FOREIGN KEY(position_id) REFERENCES POSITION(position_id)"
-    "ON DELETE SET NULL ON UPDATE CASCADE);"; 
+    "balance DECIMAL(10,2) NOT NULL);"; 
 
   string positionSQL =
     "CREATE TABLE POSITION"
     "(position_id SERIAL PRIMARY KEY,"
     "symbol VARCHAR(20) NOT NULL,"
-    "shares INT NOT NULL);"; 
+    "acount_id INT NOT NULL,"
+    "shares INT NOT NULL,"
+    "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
+    "ON DELETE SET NULL ON UPDATE CASCADE);"; 
 
   string openSQL =
     "CREATE TABLE OPENORDER"
@@ -44,8 +44,8 @@ void createTables(connection *C) {
     "time TIME;";
 
   
-  W.exec(positionSQL);
   W.exec(accountSQL);
+  W.exec(positionSQL);
   W.exec(openSQL);
   W.exec(executeSQL);
   W.exec(cancelSQL);
