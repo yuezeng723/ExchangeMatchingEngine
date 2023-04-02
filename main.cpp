@@ -70,7 +70,7 @@ int main (int argc, char *argv[])
   }
 
 
-    try{
+  try{
       string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, OPENORDER, EXECUTEORDER, CACELORDER;";
       /* Create a transactional object. */
       work W(*C);
@@ -83,9 +83,7 @@ int main (int argc, char *argv[])
     return 1;
   }
 
-
   //Close database connection
   C->disconnect();
-
   return 0;
 }

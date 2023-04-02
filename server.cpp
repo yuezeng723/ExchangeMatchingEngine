@@ -70,6 +70,7 @@ int main(int argc, char const *argv[])
             exit(EXIT_FAILURE);
         }
         threads.push_back(thread);
+        
     }
     for (auto thread : threads) {
         pthread_join(thread, NULL);

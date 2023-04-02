@@ -1,0 +1,11 @@
+1. sudo apt install postgresql postgresql-contrib
+2. set database postgresql's user: postgres pwd:ece568
+3. sudo apt-get install -y unixodbc unixodbc-dev odbc-postgresql
+4. sudo apt install build-essential
+5. sudo apt install libtinyxml2-dev
+
+Download ODB library
+sudo wget https://www.codesynthesis.com/download/odb/2.4/odb_2.4.0-1_amd64.deb
+odb_2.4.0-1_amd64.deb
+
+6. sudo apt-get install libboost-all-dev
