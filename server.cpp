@@ -101,7 +101,7 @@ void Server::updatePosition(string symbol, int account_id, int shares) {
     result R = W.exec(sql.str());
     if(R.affected_rows() == 0) {
         W.abort();
-        addPosition(C, symbol, account_id, shares);
+        addPosition(symbol, account_id, shares);
     }
     else W.commit();
 }
@@ -142,4 +142,16 @@ void Server::updateOpenOrder(int open_id, int shares) {
     sql << "UPDATE OPENORDER SET shares=" << shares << " WHERE open_id=" << open_id << ";";
     W.exec(sql.str());
     W.commit();
+}
+
+void Server::handleClient(int client_fd) {
+    char buffer[4000];
+    int bytesReceived;
+    while ((bytesReceived = recv(client_fd, buffer, 4000, 0)) > 0) {
+        buffer[bytesReceived] = '\0';
+        std::cout << "Received: " << buffer << std::endl;
+        const char* response = "server get";
+        send(client_fd, response, strlen(response), 0);
+    }
+    close(client_fd);
 }
