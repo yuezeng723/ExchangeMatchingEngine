@@ -12,7 +12,7 @@ void Server::createTables() {
     "CREATE TABLE POSITION"
     "(position_id SERIAL PRIMARY KEY,"
     "symbol VARCHAR(20) NOT NULL,"
-    "acount_id INT NOT NULL,"
+    "account_id INT NOT NULL,"
     "shares INT NOT NULL,"
     "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
     "ON DELETE SET NULL ON UPDATE CASCADE);"; 
@@ -23,20 +23,20 @@ void Server::createTables() {
     "transaction_id INT NOT NULL,"
     "shares INT NOT NULL,"
     "limit_price DECIMAL(10,2),"
-    "symbol VARCHAR(20) NOT NULL;";
+    "symbol VARCHAR(20) NOT NULL);";
   string executeSQL =
     "CREATE TABLE EXECUTEORDER"
     "(execute_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
     "shares INT NOT NULL,"
     "time TIME,"
-    "execute_price DECIMAL(10,2);";
+    "execute_price DECIMAL(10,2));";
   string cancelSQL =
     "CREATE TABLE CANCELORDER"
     "(cancel_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
     "shares INT NOT NULL,"
-    "time TIME;";
+    "time TIME);";
 
   
   W.exec(accountSQL);
@@ -60,7 +60,7 @@ void Server::initialDatabase() {
   }
 
   try{
-    string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, OPENORDER, EXECUTEORDER, CACELORDER;";
+    string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, openorder, executeorder, cancelorder;";
     /* Create a transactional object. */
     work W(*C);
     /* Execute drop */
@@ -78,10 +78,10 @@ void Server::addAccount(int account_id, double balance) {
     W.exec(sql.str());
     W.commit();
 }
-void Server::updateAccount(int account_id, double balance) {    
+void Server::updateAccount(int account_id, double addon) {    
     stringstream sql;
     work W(*C);
-    sql << "UPDATE ACCOUNT SET balance=" << shares << " WHERE account_id=" << account_id << ";";
+    sql << "UPDATE ACCOUNT SET balance=balance+" << addon << " WHERE account_id=" << account_id << ";";
     W.exec(sql.str());
     W.commit();
 }
@@ -96,33 +96,36 @@ void Server::addPosition(string symbol, int account_id, int shares) {
 void Server::updatePosition(string symbol, int account_id, int shares) {
     stringstream sql;
     work W(*C);
-    sql << "UPDATE POSITION SET shares=" << shares << " WHERE account_id=" << account_id <<\
-    " AND symbol=" << symbol << ";";
+    sql << "UPDATE POSITION SET shares=shares+" << shares << " WHERE account_id=" << account_id <<\
+    " AND symbol=" << W.quote(symbol) << ";";
     result R = W.exec(sql.str());
-    if(R.affected_rows() == 0) addPosition(symbol, account_id, shares);
-    W.commit();
+    if(R.affected_rows() == 0) {
+        W.abort();
+        addPosition(C, symbol, account_id, shares);
+    }
+    else W.commit();
 }
 void Server::addOpenOrder(int transaction_id, int shares, double limit_price, string symbol) {
     stringstream sql;
     work W(*C);
-    sql << "INSERT INTO ACCOUNT (transaction_id, shares, limit_price, symbol) VALUES (" 
-    << transaction_id << "," << shares << "," << limit_price << "," << symbol << ");";
+    sql << "INSERT INTO openorder (transaction_id, shares, limit_price, symbol) VALUES (" 
+    << transaction_id << "," << shares << "," << limit_price << "," << W.quote(symbol) << ");";
     W.exec(sql.str());
     W.commit();
 }
 void Server::addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price) {
     stringstream sql;
     work W(*C);
-    sql << "INSERT INTO ACCOUNT (transaction_id, shares, time, execute_price) VALUES (" 
-    << transaction_id << "," << shares << "," << time << "," << execute_price << ");";
+    sql << "INSERT INTO executeorder (transaction_id, shares, time, execute_price) VALUES (" 
+    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << "), " << execute_price << ");";
     W.exec(sql.str());
     W.commit();
 }
 void Server::addCancelOrder(int transaction_id, int shares, std::time_t time) {
     stringstream sql;
     work W(*C);
-    sql << "INSERT INTO ACCOUNT (transaction_id, shares, time) VALUES (" 
-    << transaction_id << "," << shares << "," << time << ");";
+    sql << "INSERT INTO cancelorder (transaction_id, shares, time) VALUES (" 
+    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << ")" << ");";
     W.exec(sql.str());
     W.commit();
 }
@@ -136,7 +139,7 @@ void Server::deleteOpenOrder(int open_id) {
 void Server::updateOpenOrder(int open_id, int shares) {
     stringstream sql;
     work W(*C);
-    sql << "UPDATE OPENORDER SET shares=" << shares << " WHERE order_id=" << order_id << ";"
+    sql << "UPDATE OPENORDER SET shares=" << shares << " WHERE open_id=" << open_id << ";";
     W.exec(sql.str());
     W.commit();
 }
