@@ -8,9 +8,9 @@
 #include <vector>
 #include <pqxx/pqxx>
 #include <fstream>
+#include "sqlHandler.hpp"
 using namespace std;
 using namespace pqxx;
-
 
 #define PORT 12345
 #define MAX_CLIENTS 5
@@ -22,6 +22,7 @@ private:
     int opt = 1;
     int addrlen = sizeof(address);
     connection *C;
+    sqlHandler * handler;
 public:
     Server() {
         if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -71,15 +72,14 @@ public:
     void createTables();
     void initialDatabase();
     //Database operations
-    void addAccount(int account_id, double balance);
-    void updateAccount(int account_id, double addon);
-    void addPosition(string symbol, int account_id, int shares);
-    void updatePosition(string symbol, int account_id, int shares);
-    void addOpenOrder(int transaction_id, int shares, double limit_price, string symbol);
-    void addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price);
-    void addCancelOrder(int transaction_id, int shares, std::time_t time);
-    void deleteOpenOrder(int open_id);
-    void updateOpenOrder(int open_id, int shares);
-
+    void doCreate(int account_id, double balance, string sym, int shares);
+    bool orderCheck(int account_id, int amount, double limit);
+    void doOrder(int transaction_id, int account_id, string symbol, int amount, double limit);
+    result orderMatch(string symbol, int amount, double limit);
+    void doQueryOpen(int transaction_id);
+    void doQueryExecute(int transaction_id);
+    void doQueryCancel(int transaction_id);
+    result searchForCancel(int transaction_id);
+    void doCancel(int transaction_id, int account_id);
 
 };
