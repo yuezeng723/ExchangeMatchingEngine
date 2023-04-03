@@ -69,27 +69,27 @@ void doQueryOpen(connection *C, int transaction_id) {
   sql << "SELECT shares FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
   result R(N.exec(sql));
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
-    cout << c[0].as<string>() << endl;
+    cout << transaction_id << "," << c[0].as<string>() << endl;
   }
 }
 void doQueryExecute(connection *C, int transaction_id) {
   nontransaction N(*C);
   stringstream sql;
-  sql << "SELECT shares, time FROM CANCELORDER WHERE transaction_id=" << transaction_id << ";";
+  sql << "SELECT shares, execute_price, time FROM EXECUTEORDER WHERE transaction_id=" << transaction_id << ";";
   result R(N.exec(sql));
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
-    // cout << c[0].as<string>() << ", " << c[1].as<string> << endl;
-    cout << c[0].as<string>() << endl;
+    cout << transaction_id << "," << c[0].as<string>() << ", " << c[1].as<string>() << endl;
+    // cout << c[0].as<string>() << endl;
   }
 }
 void doQueryCancel(connection *C, int transaction_id) {
   nontransaction N(*C);
   stringstream sql;
-  sql << "SELECT shares, execute_price, time FROM EXECUTEORDER WHERE transaction_id=" << transaction_id << ";";
+  sql << "SELECT shares, time FROM CANCELORDER WHERE transaction_id=" << transaction_id << ";";
   result R(N.exec(sql));
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
-    // cout << c[0].as<string>() << ", " << c[1].as<string>() << ", " << c[2].as<string>() << endl;
-    cout << c[0].as<string>() << endl;
+    cout << transaction_id << "," << c[0].as<string>() << ", " << c[1].as<string>() << endl;
+    // cout << c[0].as<string>() << endl;
   }
 }
 result searchForCancel(connection *C, int transaction_id) {

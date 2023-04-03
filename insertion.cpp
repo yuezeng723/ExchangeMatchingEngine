@@ -29,8 +29,11 @@ void updatePosition(connection *C, string symbol, int account_id, int shares) {
     sql << "UPDATE POSITION SET shares=shares+" << shares << " WHERE account_id=" << account_id <<\
     " AND symbol=" << W.quote(symbol) << ";";
     result R = W.exec(sql.str());
-    if(R.affected_rows() == 0) addPosition(C, symbol, account_id, shares);
-    W.commit();
+    if(R.affected_rows() == 0) {
+        W.abort();
+        addPosition(C, symbol, account_id, shares);
+    }
+    else W.commit();
 }
 void addOpenOrder(connection *C, int transaction_id, int shares, double limit_price, string symbol) {
     stringstream sql;
