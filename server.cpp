@@ -1,79 +1,142 @@
-#include <iostream>
-#include <cstring>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <vector>
+#include "server.hpp"
 
-#define PORT 12345
-#define MAX_CLIENTS 5
+void Server::createTables() {
+  work W(*C);
 
-void* handleClient(void* arg)
-{
-    int client_fd = *(int*)arg;
-    char buffer[1024] = {0};
-    int valread = read( client_fd , buffer, 1024);
-    printf("%s\n",buffer );
-    send(client_fd , "Hello from server" , strlen("Hello from server") , 0 );
-    printf("Hello message sent\n");
-    close(client_fd);
-    pthread_exit(NULL);
+  string accountSQL =
+    "CREATE TABLE ACCOUNT"
+    "(account_id SERIAL PRIMARY KEY,"
+    "balance DECIMAL(10,2) NOT NULL);"; 
+
+  string positionSQL =
+    "CREATE TABLE POSITION"
+    "(position_id SERIAL PRIMARY KEY,"
+    "symbol VARCHAR(20) NOT NULL,"
+    "acount_id INT NOT NULL,"
+    "shares INT NOT NULL,"
+    "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
+    "ON DELETE SET NULL ON UPDATE CASCADE);"; 
+
+  string openSQL =
+    "CREATE TABLE OPENORDER"
+    "(open_id SERIAL PRIMARY KEY,"
+    "transaction_id INT NOT NULL,"
+    "shares INT NOT NULL,"
+    "limit_price DECIMAL(10,2),"
+    "symbol VARCHAR(20) NOT NULL;";
+  string executeSQL =
+    "CREATE TABLE EXECUTEORDER"
+    "(execute_id SERIAL PRIMARY KEY,"
+    "transaction_id INT NOT NULL,"
+    "shares INT NOT NULL,"
+    "time TIME,"
+    "execute_price DECIMAL(10,2);";
+  string cancelSQL =
+    "CREATE TABLE CANCELORDER"
+    "(cancel_id SERIAL PRIMARY KEY,"
+    "transaction_id INT NOT NULL,"
+    "shares INT NOT NULL,"
+    "time TIME;";
+
+  
+  W.exec(accountSQL);
+  W.exec(positionSQL);
+  W.exec(openSQL);
+  W.exec(executeSQL);
+  W.exec(cancelSQL);
+  W.commit();
 }
 
-int main(int argc, char const *argv[])
-{
-    int server_fd, new_socket;
-    struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-    std::vector<pthread_t> threads;
-    
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-    {
-        perror("socket failed");
-        exit(EXIT_FAILURE);
+void Server::initialDatabase() {
+  try{
+    C = new connection("dbname=exchange_matching user=postgres password=ece568");
+    if (C->is_open()) {
+      // cout << "Opened database successfully: " << C->dbname() << endl;
+    } else {
+      cout << "Can't open database" << endl;
     }
-    
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-                                                  &opt, sizeof(opt)))
-    {
-        perror("setsockopt");
-        exit(EXIT_FAILURE);
-    }
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons( PORT );
-    
-    if (bind(server_fd, (struct sockaddr *)&address,
-                                 sizeof(address))<0)
-    {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
-    }
-    if (listen(server_fd, MAX_CLIENTS) < 0)
-    {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-    while(true) {
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
-                       (socklen_t*)&addrlen))<0)
-        {
-            perror("accept");
-            exit(EXIT_FAILURE);
-        }
-        
-        pthread_t thread;
-        if (pthread_create(&thread, NULL, handleClient, (void*)&new_socket) != 0) {
-            perror("pthread_create");
-            exit(EXIT_FAILURE);
-        }
-        threads.push_back(thread);
-        
-    }
-    for (auto thread : threads) {
-        pthread_join(thread, NULL);
-    }
-    return 0;
+  } catch (const std::exception &e){
+    cerr << e.what() << std::endl;
+  }
+
+  try{
+    string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, OPENORDER, EXECUTEORDER, CACELORDER;";
+    /* Create a transactional object. */
+    work W(*C);
+    /* Execute drop */
+    W.exec(dropSql);
+    W.commit();
+  } catch (const std::exception &e){
+    cerr << e.what() << std::endl;
+  }
+}
+
+void Server::addAccount(int account_id, double balance) {    
+    stringstream sql;
+    work W(*C);
+    sql << "INSERT INTO ACCOUNT (account_id, balance) VALUES (" << account_id << "," << balance <<");";
+    W.exec(sql.str());
+    W.commit();
+}
+void Server::updateAccount(int account_id, double balance) {    
+    stringstream sql;
+    work W(*C);
+    sql << "UPDATE ACCOUNT SET balance=" << shares << " WHERE account_id=" << account_id << ";";
+    W.exec(sql.str());
+    W.commit();
+}
+void Server::addPosition(string symbol, int account_id, int shares) {
+    stringstream sql;
+    work W(*C);
+    sql << "INSERT INTO POSITION (symbol, account_id, shares) VALUES (" << W.quote(symbol) <<\
+    "," << account_id << "," << shares << ");";
+    W.exec(sql.str());
+    W.commit();
+}
+void Server::updatePosition(string symbol, int account_id, int shares) {
+    stringstream sql;
+    work W(*C);
+    sql << "UPDATE POSITION SET shares=" << shares << " WHERE account_id=" << account_id <<\
+    " AND symbol=" << symbol << ";";
+    result R = W.exec(sql.str());
+    if(R.affected_rows() == 0) addPosition(symbol, account_id, shares);
+    W.commit();
+}
+void Server::addOpenOrder(int transaction_id, int shares, double limit_price, string symbol) {
+    stringstream sql;
+    work W(*C);
+    sql << "INSERT INTO ACCOUNT (transaction_id, shares, limit_price, symbol) VALUES (" 
+    << transaction_id << "," << shares << "," << limit_price << "," << symbol << ");";
+    W.exec(sql.str());
+    W.commit();
+}
+void Server::addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price) {
+    stringstream sql;
+    work W(*C);
+    sql << "INSERT INTO ACCOUNT (transaction_id, shares, time, execute_price) VALUES (" 
+    << transaction_id << "," << shares << "," << time << "," << execute_price << ");";
+    W.exec(sql.str());
+    W.commit();
+}
+void Server::addCancelOrder(int transaction_id, int shares, std::time_t time) {
+    stringstream sql;
+    work W(*C);
+    sql << "INSERT INTO ACCOUNT (transaction_id, shares, time) VALUES (" 
+    << transaction_id << "," << shares << "," << time << ");";
+    W.exec(sql.str());
+    W.commit();
+}
+void Server::deleteOpenOrder(int open_id) {
+    stringstream sql;
+    work W(*C);
+    sql << "DELETE FROM OPENORDER WHERE open_id=" << open_id << ";"; 
+    W.exec(sql.str());
+    W.commit();
+}
+void Server::updateOpenOrder(int open_id, int shares) {
+    stringstream sql;
+    work W(*C);
+    sql << "UPDATE OPENORDER SET shares=" << shares << " WHERE order_id=" << order_id << ";"
+    W.exec(sql.str());
+    W.commit();
 }
