@@ -174,6 +174,7 @@ bool Server::checkPositionExist(string symbol, int account_id) {
     }
 }
 
+
 void Server::handleClient(int client_fd) {
     char buffer[4000];
     int bytesReceived;

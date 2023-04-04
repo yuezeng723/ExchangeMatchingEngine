@@ -87,6 +87,17 @@ public:
     void updateOpenOrder(int open_id, int shares);
     bool checkAccountExist(int account_id);
     bool checkPositionExist(string symbol, int account_id);
+    //Transaction operations
+    // void doCreate(int account_id, double balance, string sym, int shares);
+    bool orderCheck(int account_id, int amount, double limit);
+    void doOrder(int transaction_id, int account_id, string symbol, int amount, double limit);
+    result orderMatch(string symbol, int amount, double limit);
+    void doQueryOpen(int transaction_id);
+    void doQueryExecute(int transaction_id);
+    void doQueryCancel(int transaction_id);
+    result searchForCancel(int transaction_id);
+    void doCancel(int transaction_id, int account_id);
+
     //XML operations
     void parseBuffer(char* buffer, int size, string &response);
     string handleCreate(pt::ptree &root, string &result);
