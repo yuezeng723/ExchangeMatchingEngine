@@ -105,7 +105,7 @@ void Server::doOrder(int transaction_id, int account_id, string symbol, int amou
       } else if(abs(shares) > abs(amount)) {
         handler->addExecuteOrder(c[0].as<int>(), -amount, std::time(nullptr), c[3].as<double>());
         handler->addExecuteOrder(transaction_id, amount, std::time(nullptr), c[3].as<double>());
-        handler->updateOpenOrder(c[1].as<int>(), amount+shares);
+        handler->updateOpenOrder(c[1].as<int>(), amount);
         handler->updatePosition(symbol, account_id, amount);
         amount = 0;
       } else {

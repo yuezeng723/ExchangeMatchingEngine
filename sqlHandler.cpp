@@ -22,7 +22,7 @@ void sqlHandler::addPosition(string symbol, int account_id, int shares) {
     W.exec(sql.str());
     W.commit();
 }
-void sqlHandler::updatePosition(string symbol, int account_id, int shares) {
+void sqlHandler::updatePosition(string symbol, int account_id, int shares) { //mutex lock
     stringstream sql;
     work W(*C);
     sql << "UPDATE POSITION SET shares=shares+" << shares << " WHERE account_id=" << account_id <<\
@@ -68,7 +68,7 @@ void sqlHandler::deleteOpenOrder(int open_id) {
 void sqlHandler::updateOpenOrder(int open_id, int shares) {
     stringstream sql;
     work W(*C);
-    sql << "UPDATE OPENORDER SET shares=" << shares << " WHERE open_id=" << open_id << ";";
+    sql << "UPDATE OPENORDER SET shares=shares+" << shares << " WHERE open_id=" << open_id << ";";
     W.exec(sql.str());
     W.commit();
 }
