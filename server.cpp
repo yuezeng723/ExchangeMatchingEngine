@@ -17,6 +17,9 @@ void Server::createTables() {
     "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
     "ON DELETE SET NULL ON UPDATE CASCADE);"; 
 
+  string transactionSQL = 
+    "CREATE TABLE TRANSACTION"
+    "(id SERIAL PRIMARY KEY);";
   string openSQL =
     "CREATE TABLE OPENORDER"
     "(open_id SERIAL PRIMARY KEY,"
@@ -41,6 +44,7 @@ void Server::createTables() {
   
   W.exec(accountSQL);
   W.exec(positionSQL);
+  W.exec(transactionSQL);
   W.exec(openSQL);
   W.exec(executeSQL);
   W.exec(cancelSQL);
@@ -56,7 +60,7 @@ void Server::initialDatabase() {
   }
 
   try{
-    string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, openorder, executeorder, cancelorder;";
+    string dropSql = "DROP TABLE IF EXISTS POSITION, ACCOUNT, transaction, openorder, executeorder, cancelorder;";
     /* Create a transactional object. */
     work W(*C);
     /* Execute drop */
@@ -88,9 +92,10 @@ bool Server::checkValidSellOrder(int account_id, string symbol, int amount) {
   return false;
 }
 //execute the order
-void Server::doOrder(int transaction_id, int account_id, string symbol, int amount, double limit) {
+int Server::doOrder(int account_id, string symbol, int amount, double limit) {
   updateAccount(account_id, -amount*limit);
   result R = orderMatch(symbol, amount, limit);
+  int transaction_id = addTransaction();
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(amount != 0) {
       int shares = c[2].as<int>();
@@ -116,6 +121,7 @@ void Server::doOrder(int transaction_id, int account_id, string symbol, int amou
     }
   }
   if(amount != 0) addOpenOrder(transaction_id, amount, limit, symbol);
+  return transaction_id;
 }
 //match the order
 result Server::orderMatch(string symbol, int amount, double limit)
@@ -220,6 +226,15 @@ bool Server::checkOpenOrderExist(int transaction_id) {
     }
 }
 
+int Server::addTransaction() {    
+    stringstream sql;
+    work W(*C);
+    sql << "INSERT INTO transaction DEFAULT VALUES RETURNING id;";
+    result res = W.exec(sql.str());
+    int id = res[0]["id"].as<int>();
+    W.commit();
+    return id;
+}
 void Server::addAccount(int account_id, double balance) {  
     stringstream res;  
     try {
@@ -414,8 +429,7 @@ string Server::handleTransaction(pt::ptree &root, string &response){
         error.put("<xmlattr>.limit", limit_price);
       }
       else {
-
-        doOrder(transaction_id, account_id, symbol, amount, limit_price);
+        int transaction_id = doOrder(account_id, symbol, amount, limit_price);
         pt::ptree &opened = treeRoot.add("opened", "");
         opened.put("<xmlattr>.sym", symbol);
         opened.put("<xmlattr>.amount", amount);

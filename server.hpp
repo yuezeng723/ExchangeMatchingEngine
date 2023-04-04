@@ -79,6 +79,7 @@ public:
     void createTables();
     void initialDatabase();
     //Database operations
+    int addTransaction();
     void addAccount(int account_id, double balance);
     void updateAccount(int account_id, double addon);
     void addPosition(string symbol, int account_id, int shares);
@@ -96,7 +97,7 @@ public:
     bool checkValidBuyOrder(int account_id, int amount, double limit);
     bool checkValidSellOrder(int account_id, string symbol, int amount);
 
-    void doOrder(int transaction_id, int account_id, string symbol, int amount, double limit);
+    int doOrder(int account_id, string symbol, int amount, double limit);
     result orderMatch(string symbol, int amount, double limit);
     result doQueryOpen(int transaction_id);
     result doQueryExecute(int transaction_id);
