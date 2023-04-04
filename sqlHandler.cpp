@@ -1,11 +1,18 @@
 #include "sqlHandler.hpp"
 
-void sqlHandler::addAccount(int account_id, double balance) {    
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO ACCOUNT (account_id, balance) VALUES (" << account_id << "," << balance <<");";
-    W.exec(sql.str());
-    W.commit();
+void sqlHandler::addAccount(int account_id, double balance) {  
+    stringstream res;  
+    try {
+        stringstream sql;
+        work W(*C);
+        sql << "INSERT INTO ACCOUNT (account_id, balance) VALUES (" << account_id << "," << balance <<");";
+        result R = W.exec(sql.str());
+        W.commit();
+    } catch (const std::exception& e) {
+        res << "error: " << e.what() << std::endl;
+        // return 1;
+    }
+
 }
 void sqlHandler::updateAccount(int account_id, double addon) {    
     stringstream sql;
