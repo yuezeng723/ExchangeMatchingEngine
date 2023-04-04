@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-O3
-EXTRAFLAGS=-lpqxx -lpq -pthread
+EXTRAFLAGS=-lpqxx -lpq -pthread -lboost_system
 TARGETS=client server
 
 all: $(TARGETS)

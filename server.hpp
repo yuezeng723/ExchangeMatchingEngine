@@ -8,6 +8,11 @@
 #include <vector>
 #include <pqxx/pqxx>
 #include <fstream>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/detail/file_parser_error.hpp>
+#include <boost/foreach.hpp>
+namespace pt = boost::property_tree;
 using namespace std;
 using namespace pqxx;
 
@@ -80,6 +85,10 @@ public:
     void addCancelOrder(int transaction_id, int shares, std::time_t time);
     void deleteOpenOrder(int open_id);
     void updateOpenOrder(int open_id, int shares);
-
-
+    bool checkAccountExist(int account_id);
+    bool checkPositionExist(string symbol, int account_id);
+    //XML operations
+    void parseBuffer(char* buffer, int size, string &response);
+    string handleCreate(pt::ptree &root, string &result);
+    string handleTransaction(pt::ptree &root, string &result);
 };
