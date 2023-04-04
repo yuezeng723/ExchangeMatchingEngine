@@ -12,7 +12,7 @@
 void communicateXML(int sockfd, std::string directory) {
     // send XML file to server
     char buffer[1024] = {0};
-    std::vector<std::string> filenames = {"createAccount1.xml", "openSellOrder1.xml"};
+    std::vector<std::string> filenames = {"createAccount3.xml", "openSellOrder1.xml"};
     for (const auto& filename : filenames) {
         std::ifstream file("./"+directory+ "/" + filename);
         if (file.is_open()) {
