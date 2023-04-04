@@ -66,82 +66,119 @@ void Server::initialDatabase() {
     /* Execute drop */
     W.exec(dropSql);
     W.commit();
+    handler = new sqlHandler(C);
   } catch (const std::exception &e){
     cerr << e.what() << std::endl;
   }
 }
 
-void Server::addAccount(int account_id, double balance) {    
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO ACCOUNT (account_id, balance) VALUES (" << account_id << "," << balance <<");";
-    W.exec(sql.str());
-    W.commit();
+void Server::doCreate(int account_id, double balance, string sym, int shares) {
+  handler->addAccount(account_id, balance);
+  handler->addPosition(sym, account_id, shares);
 }
-void Server::updateAccount(int account_id, double addon) {    
-    stringstream sql;
-    work W(*C);
-    sql << "UPDATE ACCOUNT SET balance=balance+" << addon << " WHERE account_id=" << account_id << ";";
-    W.exec(sql.str());
-    W.commit();
-}
-void Server::addPosition(string symbol, int account_id, int shares) {
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO POSITION (symbol, account_id, shares) VALUES (" << W.quote(symbol) <<\
-    "," << account_id << "," << shares << ");";
-    W.exec(sql.str());
-    W.commit();
-}
-void Server::updatePosition(string symbol, int account_id, int shares) {
-    stringstream sql;
-    work W(*C);
-    sql << "UPDATE POSITION SET shares=shares+" << shares << " WHERE account_id=" << account_id <<\
-    " AND symbol=" << W.quote(symbol) << ";";
-    result R = W.exec(sql.str());
-    if(R.affected_rows() == 0) {
-        W.abort();
-        addPosition(symbol, account_id, shares);
+// only check for buy right now
+bool Server::orderCheck(int account_id, int amount, double limit) {
+  nontransaction N(*C);
+  stringstream sql;
+  sql << "SELECT ACCOUNT.balance FROM ACCOUNT WHERE account_id=" << account_id << ";";
+  result R( N.exec(sql));
+  result::const_iterator c = R.begin();
+  if(c[0].as<int>() < amount * limit || c == R.end()) return true;
+  return false;
+} //+-
+
+void Server::doOrder(int transaction_id, int account_id, string symbol, int amount, double limit) {
+  // if(orderCheck(*C, account_id, amount, limit)) return; //change!!
+//reduce account balance
+  //updateAccount need to be done after checking account valid
+  handler->updateAccount(account_id, -amount*limit);
+  result R = orderMatch(symbol, amount, limit);
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+    if(amount != 0) {
+      int shares = c[2].as<int>();
+      if(abs(shares) < abs(amount)) {
+        handler->addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
+        handler->deleteOpenOrder(c[1].as<int>());
+        handler->addExecuteOrder(transaction_id, -shares, std::time(nullptr), c[3].as<double>());
+        handler->updatePosition(symbol, account_id, -shares);
+        amount += shares;
+      } else if(abs(shares) > abs(amount)) {
+        handler->addExecuteOrder(c[0].as<int>(), -amount, std::time(nullptr), c[3].as<double>());
+        handler->addExecuteOrder(transaction_id, amount, std::time(nullptr), c[3].as<double>());
+        handler->updateOpenOrder(c[1].as<int>(), amount);
+        handler->updatePosition(symbol, account_id, amount);
+        amount = 0;
+      } else {
+        handler->addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
+        handler->deleteOpenOrder(c[1].as<int>());
+        handler->addExecuteOrder(transaction_id, amount, std::time(nullptr), c[3].as<double>());
+        handler->updatePosition(symbol, account_id, amount);
+        amount = 0;
+      }
     }
-    else W.commit();
+  }
+  if(amount != 0) handler->addOpenOrder(transaction_id, amount, limit, symbol);
 }
-void Server::addOpenOrder(int transaction_id, int shares, double limit_price, string symbol) {
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO openorder (transaction_id, shares, limit_price, symbol) VALUES (" 
-    << transaction_id << "," << shares << "," << limit_price << "," << W.quote(symbol) << ");";
-    W.exec(sql.str());
-    W.commit();
+result Server::orderMatch(string symbol, int amount, double limit)
+{
+  nontransaction N(*C);
+  stringstream sql;
+  string op = "open";
+  if(amount < 0) {
+    sql << "SELECT transaction_id, open_id, shares, limit_price FROM OPENORDER WHERE \
+    symbol=" << N.quote(symbol) << " AND shares>0 AND limit_price>" << limit << "ORDER BY limit_price DESC, open_id ASC;";
+  } else {
+    sql << "SELECT transaction_id, open_id, shares, limit_price FROM OPENORDER WHERE \
+    symbol=" << N.quote(symbol) << " AND shares<0 AND limit_price<" << limit << "ORDER BY limit_price ASC, open_id ASC;";
+  }
+  result R( N.exec(sql));
+  return R;
 }
-void Server::addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price) {
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO executeorder (transaction_id, shares, time, execute_price) VALUES (" 
-    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << "), " << execute_price << ");";
-    W.exec(sql.str());
-    W.commit();
+
+void Server::doQueryOpen(int transaction_id) {
+  nontransaction N(*C);
+  stringstream sql;
+  sql << "SELECT shares FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
+  result R(N.exec(sql));
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+    cout << transaction_id << "," << c[0].as<string>() << endl;
+  }
 }
-void Server::addCancelOrder(int transaction_id, int shares, std::time_t time) {
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO cancelorder (transaction_id, shares, time) VALUES (" 
-    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << ")" << ");";
-    W.exec(sql.str());
-    W.commit();
+void Server::doQueryExecute(int transaction_id) {
+  nontransaction N(*C);
+  stringstream sql;
+  sql << "SELECT shares, execute_price, time FROM EXECUTEORDER WHERE transaction_id=" << transaction_id << ";";
+  result R(N.exec(sql));
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+    cout << transaction_id << "," << c[0].as<string>() << ", " << c[1].as<string>() << endl;
+    // cout << c[0].as<string>() << endl;
+  }
 }
-void Server::deleteOpenOrder(int open_id) {
-    stringstream sql;
-    work W(*C);
-    sql << "DELETE FROM OPENORDER WHERE open_id=" << open_id << ";"; 
-    W.exec(sql.str());
-    W.commit();
+void Server::doQueryCancel(int transaction_id) {
+  nontransaction N(*C);
+  stringstream sql;
+  sql << "SELECT shares, time FROM CANCELORDER WHERE transaction_id=" << transaction_id << ";";
+  result R(N.exec(sql));
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+    cout << transaction_id << "," << c[0].as<string>() << ", " << c[1].as<string>() << endl;
+    // cout << c[0].as<string>() << endl;
+  }
 }
-void Server::updateOpenOrder(int open_id, int shares) {
+result Server::searchForCancel(int transaction_id) {
+    nontransaction N(*C);
     stringstream sql;
-    work W(*C);
-    sql << "UPDATE OPENORDER SET shares=" << shares << " WHERE open_id=" << open_id << ";";
-    W.exec(sql.str());
-    W.commit();
+    sql << "SELECT open_id, shares, limit_price, symbol FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
+    result R( N.exec(sql));
+    return R;
+}
+void Server::doCancel(int transaction_id, int account_id) { //cancel shares combine
+  result R = searchForCancel(transaction_id);
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+    handler->updateAccount(account_id, c[1].as<int>()*c[2].as<double>());
+    handler->addCancelOrder(transaction_id, c[1].as<int>(), std::time(nullptr));
+    handler->deleteOpenOrder(c[0].as<int>());
+  }
+  //add update account
 }
 // check if the account exists, return true if exists
 bool Server::checkAccountExist(int account_id) {
