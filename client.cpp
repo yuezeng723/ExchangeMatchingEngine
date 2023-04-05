@@ -110,7 +110,7 @@ void communicateXML(const std::string& xml_request, const std::string& server_ip
 }
 
 int main() {
-    std::vector<std::string> xml_requests;\
+    std::vector<std::string> xml_requests;
     xml_requests.push_back(createAccountPosition(1, "AAPL", 1000, 100));
 
     xml_requests.push_back(createOpenTransaction(1, "AAPL", 100, 7));
