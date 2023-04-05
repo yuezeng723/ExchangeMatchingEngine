@@ -7,89 +7,98 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+namespace pt = boost::property_tree;
 
-
-void communicateXML(int sockfd, std::string directory) {
-    // send XML file to server
-    char buffer[1024] = {0};
-    std::vector<std::string> filenames = {"createAccount1.xml", "createAccount2.xml"};
-    for (const auto& filename : filenames) {
-        std::ifstream file("./"+directory+ "/" + filename);
-        if (file.is_open()) {
-            std::string fileContent;
-            std::string line;
-            while (std::getline(file, line)) {
-                fileContent += line;
-            }
-            file.close();
-            const char* data = fileContent.c_str();
-            send(sockfd, data, strlen(data), 0);
-            int bytesReceived = recv(sockfd, buffer, 1024, 0);
-            if (bytesReceived < 0) {
-                std::cerr << "Failed to receive data" << std::endl;
-            } else {
-                buffer[bytesReceived] = '\0';
-                std::string response = buffer;
-                std::cout << "Received response: " << response << std::endl;
-                // store response in file
-                std::ofstream outfile("clientResult.xml");
-                if (outfile.is_open()) {
-                    outfile << response;
-                    outfile.close();
-                    std::cout << "Response stored in clientResult.xml" << std::endl;
-                } else {
-                    std::cerr << "Failed to open file for writing" << std::endl;
-                }
-            }
-            memset(buffer, 0, sizeof(buffer));
-        } else {
-            std::cerr << "Failed to open file: " << filename << std::endl;
-        }
-    }
+std::string createOpenTransaction(int account_id, const std::string& sym, int amount, int limit) {
+    pt::ptree tree;
+    pt::ptree& transactions = tree.add("transactions", "");
+    transactions.put("<xmlattr>.id", account_id);
+    pt::ptree& order = transactions.add("order", "");
+    order.put("<xmlattr>.sym", sym);
+    order.put("<xmlattr>.amount", amount);
+    order.put("<xmlattr>.limit", limit);
+    // pt::ptree& query = transactions.add("query", "");
+    // query.put("<xmlattr>.id", trans_id);
+    // pt::ptree& cancel = transactions.add("cancel", "");
+    // cancel.put("<xmlattr>.id", trans_id);
+    std::stringstream xml_stream;
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    std::string xml_request = xml_stream.str();
+    int message_size = xml_request.size();
+    std::stringstream message_stream;
+    message_stream << message_size << std::endl << xml_request;
+    return message_stream.str();
 }
 
-int main()
-{
-    const char* hostname = "localhost";
-    const char* port = "12345";
+std::string createQueryTransaction(int account_id, int trans_id) {
+    pt::ptree tree;
+    pt::ptree& transactions = tree.add("transactions", "");
+    transactions.put("<xmlattr>.id", account_id);
+    pt::ptree& query = transactions.add("query", "");
+    query.put("<xmlattr>.id", trans_id);
+    std::stringstream xml_stream;
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    std::string xml_request = xml_stream.str();
+    int message_size = xml_request.size();
+    std::stringstream message_stream;
+    message_stream << message_size << std::endl << xml_request;
+    return message_stream.str();
+}
 
-    int sockfd;
-    struct addrinfo hints, *host_info_list, *p;
-    
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC; // use IPv4 or IPv6, whichever is available
-    hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
-
-    if (getaddrinfo(hostname, port, &hints, &host_info_list) != 0) {
-        std::cerr << "getaddrinfo failed" << std::endl;
-        return -1;
+void communicateXML(const std::string& xml_request, const std::string& server_ip, int server_port) {
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        perror("socket");
+        return;
     }
-
-    // loop through all the results and connect to the first one we can
-    for (p = host_info_list; p != NULL; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (sockfd < 0) {
-            continue;
-        }
-        if (connect(sockfd, p->ai_addr, p->ai_addrlen) < 0) {
-            close(sockfd);
-            continue;
-        }
-        break;
+    struct sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(server_port);
+    inet_pton(AF_INET, server_ip.c_str(), &server_addr.sin_addr);
+    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("connect");
+        close(sockfd);
+        return;
     }
+    send(sockfd, xml_request.c_str(), xml_request.size(), 0);
 
-    if (p == NULL) {
-        std::cerr << "Failed to connect" << std::endl;
-        return -1;
+    // Buffer to store the server's response
+    char buffer[1024] = {0};
+    int received_bytes = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
+    if (received_bytes > 0) {
+        std::cout << "Server response:\n" << buffer << std::endl;
+    } else if (received_bytes == 0) {
+        std::cout << "Server closed connection" << std::endl;
+    } else {
+        perror("recv");
     }
-
-    freeaddrinfo(host_info_list);
- 
-    // send a message to the server
-    std::string directory = "data";
-    communicateXML(sockfd, directory);
-    // use sockfd for further communication with the server
     close(sockfd);
+}
+
+int main() {
+    std::vector<std::string> xml_requests;
+    std::string openTransactionRequest1 = createOpenTransaction(1, "AAPL", 100, 20);
+    xml_requests.push_back(openTransactionRequest1);
+
+    std::string openTransactionRequest2 = createOpenTransaction(1, "TSL", 200, 5);
+    xml_requests.push_back(openTransactionRequest2);
+
+    std::string queryTransactionRequest1 = createQueryTransaction(1, 1);
+    xml_requests.push_back(queryTransactionRequest1);
+
+    std::string queryTransactionRequest2 = createQueryTransaction(1, 2);
+    xml_requests.push_back(queryTransactionRequest2);
+
+
+    std::string server_ip = "127.0.0.1";
+    int server_port = 12345;
+
+    for (size_t i = 0; i < xml_requests.size(); ++i) {
+        std::cout << "Sending XML Request " << (i + 1) << ":\n" << xml_requests[i] << std::endl;
+        communicateXML(xml_requests[i], server_ip, server_port);
+    }
 
     return 0;
 }

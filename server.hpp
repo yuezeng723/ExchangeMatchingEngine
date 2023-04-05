@@ -8,7 +8,11 @@
 #include <vector>
 #include <pqxx/pqxx>
 #include <fstream>
-#include "sqlHandler.hpp"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/detail/file_parser_error.hpp>
+#include <boost/foreach.hpp>
+namespace pt = boost::property_tree;
 using namespace std;
 using namespace pqxx;
 
@@ -22,7 +26,6 @@ private:
     int opt = 1;
     int addrlen = sizeof(address);
     connection *C;
-    sqlHandler * handler;
 public:
     Server() {
         if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -68,17 +71,41 @@ public:
             clientHandleThread.detach();
         }
     }
+    //handler
+    void parseBuffer(char* buffer, int size, string &response);
+    string handleCreate(pt::ptree &root, string &result);
+    string handleTransaction(pt::ptree &root, string &result);
+    void responseAccountNotExist(pt::ptree &treeRoot, int account_id);
+    void responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
+    void responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot);
+    void responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
     //Initial database
     void createTables();
     void initialDatabase();
     //Database operations
-    void doCreate(int account_id, double balance, string sym, int shares);
-    bool orderCheck(int account_id, int amount, double limit);
-    void doOrder(int transaction_id, int account_id, string symbol, int amount, double limit);
+    int addTransaction();
+    void addAccount(int account_id, double balance);
+    void updateAccount(int account_id, double addon);
+    void addPosition(string symbol, int account_id, int shares);
+    void updatePosition(string symbol, int account_id, int shares);
+    void addOpenOrder(int transaction_id, int shares, double limit_price, string symbol);
+    void addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price);
+    void addCancelOrder(int transaction_id, int shares, std::time_t time);
+    void deleteOpenOrder(int open_id);
+    void updateOpenOrder(int open_id, int shares);
+    bool checkAccountExist(int account_id);
+    bool checkPositionExist(string symbol, int account_id);
+    bool checkOpenOrderExist(int transaction_id);
+    //transaction operations
+    // void doCreate(int account_id, double balance, string sym, int shares);
+    bool checkValidBuyOrder(int account_id, int amount, double limit);
+    bool checkValidSellOrder(int account_id, string symbol, int amount);
+
+    int doOrder(int account_id, string symbol, int amount, double limit);
     result orderMatch(string symbol, int amount, double limit);
-    void doQueryOpen(int transaction_id);
-    void doQueryExecute(int transaction_id);
-    void doQueryCancel(int transaction_id);
+    result doQueryOpen(int transaction_id);
+    result doQueryExecute(int transaction_id);
+    result doQueryCancel(int transaction_id);
     result searchForCancel(int transaction_id);
     void doCancel(int transaction_id, int account_id);
 
