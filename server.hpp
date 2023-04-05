@@ -12,7 +12,9 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/detail/file_parser_error.hpp>
 #include <boost/foreach.hpp>
+
 #include "sqlHandler.hpp"
+#include "threadPool.hpp"
 namespace pt = boost::property_tree;
 using namespace std;
 using namespace pqxx;
@@ -27,6 +29,7 @@ private:
     int opt = 1;
     int addrlen = sizeof(address);
     connection * C;
+    ThreadPool * pool;
 public:
     Server() {
         if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -51,6 +54,7 @@ public:
         }
         initialDatabase();
         createTables();
+        pool = new ThreadPool(50);
     }
     ~Server() {
         close(server_fd);
@@ -64,10 +68,7 @@ public:
                 perror("accept");
                 exit(EXIT_FAILURE);
             }
-            thread clientHandleThread([this, new_socket]() {
-                handleClient(new_socket);
-            });
-            clientHandleThread.detach();
+            pool->enqueue([this](int new_socket) { this->handleClient(new_socket); }, new_socket);
         }
     }
     //handler

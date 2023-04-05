@@ -10,7 +10,7 @@ clean:
 client: client.cpp
 	g++ -g -o $@ $<
 
-server: main.cpp server.cpp server.hpp sqlHandler.cpp sqlHandler.hpp
+server: main.cpp server.cpp server.hpp sqlHandler.cpp sqlHandler.hpp threadPool.hpp
 	$(CC) $(CFLAG) -o $@ $^ $(EXTRAFLAGS)
 
 
