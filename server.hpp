@@ -27,7 +27,6 @@ private:
     int opt = 1;
     int addrlen = sizeof(address);
     connection * C;
-    sqlHandler * database;
 public:
     Server() {
         if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -73,14 +72,14 @@ public:
     }
     //handler
     void handleClient(int new_socket);
-    void parseBuffer(char* buffer, int size, string &response);
-    string handleCreate(pt::ptree &root, string &result);
-    string handleTransaction(pt::ptree &root, string &result);
+    void parseBuffer(sqlHandler * database, char* buffer, int size, string &response);
+    string handleCreate(sqlHandler * database, pt::ptree &root, string &result);
+    string handleTransaction(sqlHandler * database, pt::ptree &root, string &result);
     //write xml response
     void responseAccountNotExist(pt::ptree &treeRoot, int account_id);
-    void responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
-    void responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot);
-    void responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
+    void responseOrderTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
+    void responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot);
+    void responseCancelTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
     //Initial database
     void createTables();
     void initialDatabase();

@@ -19,11 +19,15 @@ void Server::createTables() {
 
   string transactionSQL = 
     "CREATE TABLE TRANSACTION"
-    "(id SERIAL PRIMARY KEY);";
+    "(id SERIAL PRIMARY KEY,"
+    "account_id INT NOT NULL,"
+    "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
+    "ON DELETE SET NULL ON UPDATE CASCADE);";
   string openSQL =
     "CREATE TABLE OPENORDER"
     "(open_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
+    "version integer NOT NULL DEFAULT 1,"
     "shares INT NOT NULL,"
     "limit_price DECIMAL(10,2),"
     "symbol VARCHAR(20) NOT NULL);";
@@ -66,32 +70,27 @@ void Server::initialDatabase() {
     /* Execute drop */
     W.exec(dropSql);
     W.commit();
-    database = new sqlHandler(C);
   } catch (const std::exception &e){
     cerr << e.what() << std::endl;
   }
 }
 
-
-
-
-
-
-
-
 void Server::handleClient(int client_fd) {
+    connection * C1 = new connection("dbname=exchange_matching user=postgres password=ece568");
+    sqlHandler * database = new sqlHandler(C1);
     char buffer[4000];
     int bytesReceived;
     while ((bytesReceived = recv(client_fd, buffer, 4000, 0)) > 0) {
         buffer[bytesReceived] = '\0';
         string response = "";
-        parseBuffer(buffer, bytesReceived, response);
+        parseBuffer(database, buffer, bytesReceived, response);
         send(client_fd, response.c_str(), response.size(), 0);
     }
     close(client_fd);
+    C1->disconnect();
 }
 
-void Server::parseBuffer(char* buffer, int size, string &response) {
+void Server::parseBuffer(sqlHandler * database, char* buffer, int size, string &response) {
   cout << "the request size is: " << size << endl;
   stringstream bufferStream;
   bufferStream.write(buffer, size);
@@ -112,9 +111,9 @@ void Server::parseBuffer(char* buffer, int size, string &response) {
 
   string rootTag = root.begin()->first;
   if (rootTag == "create") {
-    handleCreate(root, response);
+    handleCreate(database, root, response);
   } else if (rootTag == "transactions") {
-    handleTransaction(root, response);
+    handleTransaction(database, root, response);
   } else {
     pt::ptree tree;
     pt::ptree& treeRoot = tree.add("result", "");
@@ -126,18 +125,17 @@ void Server::parseBuffer(char* buffer, int size, string &response) {
   }
 }
 
-string Server::handleCreate(pt::ptree &root, string &response){
+string Server::handleCreate(sqlHandler * database, pt::ptree &root, string &response){
   pt::ptree tree;
   pt::ptree& treeRoot = tree.add("result", "");
   BOOST_FOREACH(pt::ptree::value_type &v, root.get_child("create")) {
     if (v.first == "account") {
       int account_id = v.second.get<int>("<xmlattr>.id");
       double balance = v.second.get<double>("<xmlattr>.balance");
-      if (database->checkAccountExist(account_id)) {
+      if (!database->addAccount(account_id, balance)) { //database->checkAccountExist(account_id)
         pt::ptree &error = treeRoot.add("error", "Account already exists");
         error.put("<xmlattr>.id", account_id);
       } else {
-        database->addAccount(account_id, balance);
         pt::ptree &created = treeRoot.add("created", "");
         created.put("<xmlattr>.id", account_id);
       }
@@ -172,7 +170,7 @@ void Server::responseAccountNotExist(pt::ptree &treeRoot, int account_id) {
   error.put("<xmlattr>.id", account_id);
 }
 
-void Server::responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id) {
+void Server::responseOrderTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id) {
   string symbol = v.second.get<string>("<xmlattr>.sym");
   int amount = v.second.get<int>("<xmlattr>.amount");
   double limit_price = v.second.get<double>("<xmlattr>.limit");
@@ -198,7 +196,7 @@ void Server::responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeR
   }
 }
 
-void Server:: responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot) {
+void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot) {
   int transaction_id = v.second.get<int>("<xmlattr>.id");
   result openedOrders = database->doQueryOpen(transaction_id);
   result executedOrders = database->doQueryExecute(transaction_id);
@@ -232,7 +230,7 @@ void Server:: responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &tree
   }
 }
 
-void Server::responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id){
+void Server::responseCancelTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id){
   int transaction_id = v.second.get<int>("<xmlattr>.id");
   if (!database->checkOpenOrderExist(transaction_id)) {
     pt::ptree &error = treeRoot.add("error", "No open order for canellation");
@@ -257,7 +255,7 @@ void Server::responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &tree
   }
 }
 
-string Server::handleTransaction(pt::ptree &root, string &response){
+string Server::handleTransaction(sqlHandler * database, pt::ptree &root, string &response){
   pt::ptree tree;
   pt::ptree& treeRoot = tree.add("result", "");
   int account_id = root.get<int>("transactions.<xmlattr>.id");
@@ -267,21 +265,21 @@ string Server::handleTransaction(pt::ptree &root, string &response){
       if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
-        responseOrderTransaction(v, treeRoot, account_id);
+        responseOrderTransaction(database, v, treeRoot, account_id);
       }
     } 
     else if (v.first == "query") {
       if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
-        responseQueryTransaction(v, treeRoot);
+        responseQueryTransaction(database, v, treeRoot);
       }
     }
     else if (v.first == "cancel") {
       if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
-        responseCancelTransaction(v, treeRoot, account_id);
+        responseCancelTransaction(database, v, treeRoot, account_id);
       }
     }
   }
@@ -289,4 +287,3 @@ string Server::handleTransaction(pt::ptree &root, string &response){
   response = xmlOutput.str();
   return response;
 }
-

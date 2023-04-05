@@ -1,0 +1,16 @@
+sudo apt-get install cgroup-tools
+sudo cgcreate -g cpuset:/testgroup
+sudo cgset -r cpuset.cpus="2" testgroup
+sudo cgget -g cpuset:/testgroup
+sudo cgclassify -g cpuset:/testgroup 99272
+sudo cgexec -g cpuset:/testgroup client
+ab -n 10000 -c 10 http://localhost:8080/
+pgrep myserver
+
+sudo systemd-cgtop -g cpu,memory:/my_cgroup
+sudo mount -t cgroup -o memory cpuset /sys/fs/cgroup/cpuset
+sudo cat /sys/fs/cgroup/cpuset/cpuset.cpus
+
+sudo cgcreate -t $USER:$USER -a $USER:$USER -g cpu:/testusage
+cgset -r cpu.shares=1024 testusage
+sudo cgget -g cpu:/testusage
