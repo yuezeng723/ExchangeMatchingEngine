@@ -75,6 +75,10 @@ public:
     void parseBuffer(char* buffer, int size, string &response);
     string handleCreate(pt::ptree &root, string &result);
     string handleTransaction(pt::ptree &root, string &result);
+    void responseAccountNotExist(pt::ptree &treeRoot, int account_id);
+    void responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
+    void responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot);
+    void responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
     //Initial database
     void createTables();
     void initialDatabase();

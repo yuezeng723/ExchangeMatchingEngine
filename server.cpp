@@ -78,20 +78,22 @@ void Server::initialDatabase() {
 bool Server::checkValidBuyOrder(int account_id, int amount, double limit) {
   nontransaction N(*C);
   stringstream sql;
-  sql << "SELECT ACCOUNT.balance FROM ACCOUNT WHERE account_id=" << account_id << ";";
-  result R( N.exec(sql));
+  sql << "SELECT balance FROM ACCOUNT WHERE account_id=" << account_id << ";";
+  result R(N.exec(sql));
+  if (R.empty()) {return false;}
   result::const_iterator c = R.begin();
-  if(c[0].as<int>() < amount * limit || c == R.end()) return true;
+  if (c[0].as<double>() >= amount * limit) {return true;}
   return false;
 } 
 //check whether the account has sufficient shares for sell order
 bool Server::checkValidSellOrder(int account_id, string symbol, int amount) {
   nontransaction N(*C);
   stringstream sql;
-  sql << "SELECT POSITION.shares FROM POSITION WHERE account_id=" << account_id << " AND symbol='" << symbol << "';";
-  result R( N.exec(sql));
+  sql << "SELECT shares FROM POSITION WHERE account_id=" << account_id << " AND symbol=" << N.quote(symbol) << ";";
+  result R(N.exec(sql));
+  if (R.empty()) {return false;}
   result::const_iterator c = R.begin();
-  if(c[0].as<int>() < amount || c == R.end()) return true;
+  if (c[0].as<int>() >= amount) {return true;}
   return false;
 }
 //execute the order
@@ -340,7 +342,6 @@ void Server::handleClient(int client_fd) {
         buffer[bytesReceived] = '\0';
         string response = "";
         parseBuffer(buffer, bytesReceived, response);
-
         send(client_fd, response.c_str(), response.size(), 0);
     }
     close(client_fd);
@@ -371,7 +372,13 @@ void Server::parseBuffer(char* buffer, int size, string &response) {
   } else if (rootTag == "transactions") {
     handleTransaction(root, response);
   } else {
-    throw runtime_error("Invalid XML file in parseBuffer");
+    pt::ptree tree;
+    pt::ptree& treeRoot = tree.add("result", "");
+    pt::ptree &error = treeRoot.add("error", "Invalid request");
+    error.put("<xmlattr>.id", 0);
+    stringstream ss;
+    pt::write_xml(ss, tree);
+    response = ss.str();
   }
 }
 
@@ -416,96 +423,117 @@ string Server::handleCreate(pt::ptree &root, string &response){
   return response;
 }
 
+void Server::responseAccountNotExist(pt::ptree &treeRoot, int account_id) {
+  pt::ptree &error = treeRoot.add("error", "Account does not exist");
+  error.put("<xmlattr>.id", account_id);
+}
+
+void Server::responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id) {
+  string symbol = v.second.get<string>("<xmlattr>.sym");
+  int amount = v.second.get<int>("<xmlattr>.amount");
+  double limit_price = v.second.get<double>("<xmlattr>.limit");
+  if (amount >= 0 && !checkValidBuyOrder(account_id, amount, limit_price)) {
+    pt::ptree &error = treeRoot.add("error", "Insufficient balance");
+    error.put("<xmlattr>.sym", symbol);
+    error.put("<xmlattr>.amount", amount);
+    error.put("<xmlattr>.limit", limit_price);
+  }
+  else if (amount < 0 && !checkValidSellOrder(account_id, symbol, amount)) {
+    pt::ptree &error = treeRoot.add("error", "Insufficient shares");
+    error.put("<xmlattr>.sym", symbol);
+    error.put("<xmlattr>.amount", amount);
+    error.put("<xmlattr>.limit", limit_price);
+  }
+  else {
+    int transaction_id = doOrder(account_id, symbol, amount, limit_price);
+    pt::ptree &opened = treeRoot.add("opened", "");
+    opened.put("<xmlattr>.sym", symbol);
+    opened.put("<xmlattr>.amount", amount);
+    opened.put("<xmlattr>.limit", limit_price);
+    opened.put("<xmlattr>.id", transaction_id);
+  }
+}
+
+void Server:: responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot) {
+  int transaction_id = v.second.get<int>("<xmlattr>.id");
+  result openedOrders = doQueryOpen(transaction_id);
+  result executedOrders = doQueryExecute(transaction_id);
+  result canceledOrders = doQueryCancel(transaction_id);
+  pt::ptree &status = treeRoot.add("status", "");
+  status.put("<xmlattr>.id", transaction_id);
+  if (!openedOrders.empty()) {
+    for (const auto &order : openedOrders) {
+      pt::ptree &status_open = status.add("open", "");
+      status_open.put("<xmlattr>.shares", order["shares"].as<int>());
+    }
+  }
+  if (!canceledOrders.empty()) {
+    for (const auto &order : canceledOrders) {
+      pt::ptree &status_cancel = status.add("canceled", "");
+      status_cancel.put("<xmlattr>.shares", order["shares"].as<int>());
+      status_cancel.put("<xmlattr>.time", order["time"].as<string>());
+    }
+  }
+  if (!executedOrders.empty()) {
+    for (const auto &order : executedOrders) {
+      pt::ptree &status_exec = status.add("executed", "");
+      status_exec.put("<xmlattr>.shares", order["shares"].as<int>());
+      status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
+      status_exec.put("<xmlattr>.time", order["time"].as<string>());
+    }
+  }
+}
+
+void Server::responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id){
+  int transaction_id = v.second.get<int>("<xmlattr>.id");
+  if (!checkOpenOrderExist(transaction_id)) {
+    pt::ptree &error = treeRoot.add("error", "No open order for canellation");
+    error.put("<xmlattr>.id", transaction_id);
+  } else {
+    doCancel(transaction_id, account_id);
+    pt::ptree &canceled = treeRoot.add("canceled", "");
+    canceled.put("<xmlattr>.id", transaction_id);
+    result canceledOrders = doQueryCancel(transaction_id);
+    for (const auto &order : canceledOrders) {
+      pt::ptree &status_cancel = canceled.add("canceled", "");
+      status_cancel.put("<xmlattr>.shares", order["shares"].as<int>());
+      status_cancel.put("<xmlattr>.time", order["time"].as<string>());
+    }
+    result executedOrders = doQueryExecute(transaction_id);
+    for (const auto &order : executedOrders) {
+      pt::ptree &status_exec = canceled.add("executed", "");
+      status_exec.put("<xmlattr>.shares", order["shares"].as<int>());
+      status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
+      status_exec.put("<xmlattr>.time", order["time"].as<string>());
+    }
+  }
+}
 
 string Server::handleTransaction(pt::ptree &root, string &response){
   pt::ptree tree;
   pt::ptree& treeRoot = tree.add("result", "");
   int account_id = root.get<int>("transactions.<xmlattr>.id");
   stringstream xmlOutput;
-  if (!checkAccountExist(account_id)) {
-    pt::ptree &error = treeRoot.add("error", "Account does not exist");
-    error.put("<xmlattr>.id", account_id);
-    pt::write_xml(xmlOutput, tree);
-    response = xmlOutput.str();
-    return response;
-  }
-  BOOST_FOREACH(pt::ptree::value_type &v, root.get_child("transaction")) {
+  BOOST_FOREACH(pt::ptree::value_type &v, root.get_child("transactions")) {
     if (v.first == "order") {
-      string symbol = v.second.get<string>("<xmlattr>.sym");
-      int amount = v.second.get<int>("<xmlattr>.amount");
-      double limit_price = v.second.get<double>("<xmlattr>.limit");
-      if (amount >= 0 && !checkValidBuyOrder(account_id, amount, limit_price)) {
-        pt::ptree &error = treeRoot.add("error", "Insufficient balance");
-        error.put("<xmlattr>.sym", symbol);
-        error.put("<xmlattr>.amount", amount);
-        error.put("<xmlattr>.limit", limit_price);
-      }
-      else if (amount < 0 && !checkValidSellOrder(account_id, symbol, amount)) {
-        pt::ptree &error = treeRoot.add("error", "Insufficient shares");
-        error.put("<xmlattr>.sym", symbol);
-        error.put("<xmlattr>.amount", amount);
-        error.put("<xmlattr>.limit", limit_price);
-      }
-      else {
-        int transaction_id = doOrder(account_id, symbol, amount, limit_price);
-        pt::ptree &opened = treeRoot.add("opened", "");
-        opened.put("<xmlattr>.sym", symbol);
-        opened.put("<xmlattr>.amount", amount);
-        opened.put("<xmlattr>.limit", limit_price);
-        opened.put("<xmlattr>.id", transaction_id);
+      if (!checkAccountExist(account_id)) {
+        responseAccountNotExist(treeRoot, account_id);
+      } else {
+        responseOrderTransaction(v, treeRoot, account_id);
       }
     } 
     else if (v.first == "query") {
-      int transaction_id = v.second.get<int>("<xmlattr>.id");
-      result openedOrders = doQueryOpen(transaction_id);
-      result executedOrders = doQueryExecute(transaction_id);
-      result canceledOrders = doQueryCancel(transaction_id);
-      pt::ptree &status = treeRoot.add("status", "");
-      status.put("<xmlattr>.id", transaction_id);
-      if (!openedOrders.empty()) {
-        for (const auto &order : openedOrders) {
-          pt::ptree &status_open = status.add("open", "");
-          status_open.put("<xmlattr>.shares", order["shares"].as<int>());
-        }
-      }
-      if (!canceledOrders.empty()) {
-        for (const auto &order : canceledOrders) {
-          pt::ptree &status_cancel = status.add("canceled", "");
-          status_cancel.put("<xmlattr>.shares", order["shares"].as<int>());
-          status_cancel.put("<xmlattr>.time", order["time"].as<string>());
-        }
-      }
-      if (!executedOrders.empty()) {
-        for (const auto &order : executedOrders) {
-          pt::ptree &status_exec = status.add("executed", "");
-          status_exec.put("<xmlattr>.shares", order["shares"].as<int>());
-          status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
-          status_exec.put("<xmlattr>.time", order["time"].as<string>());
-        }
+      if (!checkAccountExist(account_id)) {
+        responseAccountNotExist(treeRoot, account_id);
+      } else {
+        responseQueryTransaction(v, treeRoot);
       }
     }
     else if (v.first == "cancel") {
-      int transaction_id = v.second.get<int>("<xmlattr>.id");
-      if (!checkOpenOrderExist(transaction_id)) {
-        pt::ptree &error = treeRoot.add("error", "No open order for canellation");
-        error.put("<xmlattr>.id", transaction_id);
+      if (!checkAccountExist(account_id)) {
+        responseAccountNotExist(treeRoot, account_id);
       } else {
-        doCancel(transaction_id, account_id);
-        pt::ptree &canceled = treeRoot.add("canceled", "");
-        canceled.put("<xmlattr>.id", transaction_id);
-        result canceledOrders = doQueryCancel(transaction_id);
-        for (const auto &order : canceledOrders) {
-          pt::ptree &status_cancel = canceled.add("canceled", "");
-          status_cancel.put("<xmlattr>.shares", order["shares"].as<int>());
-          status_cancel.put("<xmlattr>.time", order["time"].as<string>());
-        }
-        result executedOrders = doQueryExecute(transaction_id);
-        for (const auto &order : executedOrders) {
-          pt::ptree &status_exec = canceled.add("executed", "");
-          status_exec.put("<xmlattr>.shares", order["shares"].as<int>());
-          status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
-          status_exec.put("<xmlattr>.time", order["time"].as<string>());
-        }
+        responseCancelTransaction(v, treeRoot, account_id);
       }
     }
   }
