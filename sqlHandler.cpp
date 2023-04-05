@@ -10,8 +10,8 @@ int sqlHandler::addTransaction(int account_id) {
     return id;
 }
 
-void sqlHandler::addAccount(int account_id, double balance) {  
-    stringstream res;  
+bool sqlHandler::addAccount(int account_id, double balance) {  
+  bool valid = true;
     try {
         stringstream sql;
         work W(*C);
@@ -19,8 +19,9 @@ void sqlHandler::addAccount(int account_id, double balance) {
         result R = W.exec(sql.str());
         W.commit();
     } catch (const std::exception& e) {
-        res << "error: " << e.what() << std::endl;
+        return false;
     }
+    return true;
 
 }
 void sqlHandler::updateAccount(int account_id, double addon) {    

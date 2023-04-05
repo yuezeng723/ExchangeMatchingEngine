@@ -23,7 +23,7 @@ public:
 //Database operations
     int addTransaction(int account_id);
     int getAccount(int transaction_id);
-    void addAccount(int account_id, double balance);
+    bool addAccount(int account_id, double balance);
     void updateAccount(int account_id, double addon);
     void addPosition(string symbol, int account_id, int shares);
     void updatePosition(string symbol, int account_id, int shares);
