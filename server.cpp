@@ -69,6 +69,7 @@ void Server::initialDatabase() {
     /* Execute drop */
     W.exec(dropSql);
     W.commit();
+    database = new sqlHandler(C);
   } catch (const std::exception &e){
     cerr << e.what() << std::endl;
   }
@@ -166,68 +167,8 @@ result Server::doQueryCancel(int transaction_id) {
 }
 
 
-result Server::searchForCancel(int transaction_id) {
-    nontransaction N(*C);
-    stringstream sql;
-    sql << "SELECT open_id, shares, limit_price, symbol FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
-    result R( N.exec(sql));
-    return R;
-}
 
-//cancel the order with transaction_id and account_id
-void Server::doCancel(int transaction_id, int account_id) { //cancel shares combine
-  result R = searchForCancel(transaction_id);
-  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
-    updateAccount(account_id, c[1].as<int>()*c[2].as<double>());
-    addCancelOrder(transaction_id, c[1].as<int>(), std::time(nullptr));
-    deleteOpenOrder(c[0].as<int>());
-  }
-}
-// check if the account exists, return true if exists
-bool Server::checkAccountExist(int account_id) {
-    stringstream sql;
-    work W(*C);
-    sql << "SELECT * FROM ACCOUNT WHERE account_id=" << account_id << ";";
-    result R = W.exec(sql.str());
-    if(R.size() == 0) {
-        W.abort();
-        return false;
-    }
-    else {
-        W.commit();
-        return true;
-    }
-}
-// check if the position exists, return true if exists
-bool Server::checkPositionExist(string symbol, int account_id) {
-    stringstream sql;
-    work W(*C);
-    sql << "SELECT * FROM POSITION WHERE account_id=" << account_id << " AND symbol=" << W.quote(symbol) << ";";
-    result R = W.exec(sql.str());
-    if(R.size() == 0) {
-        W.abort();
-        return false;
-    }
-    else {
-        W.commit();
-        return true;
-    }
-}
 
-bool Server::checkOpenOrderExist(int transaction_id) {
-    stringstream sql;
-    work W(*C);
-    sql << "SELECT * FROM OPENORDER WHERE transaction_id=" << transaction_id << ";";
-    result R = W.exec(sql.str());
-    if(R.size() == 0) {
-        W.abort();
-        return false;
-    }
-    else {
-        W.commit();
-        return true;
-    }
-}
 
 int Server::addTransaction(int account_id) {    
     stringstream sql;
@@ -389,23 +330,23 @@ string Server::handleCreate(pt::ptree &root, string &response){
     if (v.first == "account") {
       int account_id = v.second.get<int>("<xmlattr>.id");
       double balance = v.second.get<double>("<xmlattr>.balance");
-      if (checkAccountExist(account_id)) {
+      if (database->checkAccountExist(account_id)) {
         pt::ptree &error = treeRoot.add("error", "Account already exists");
         error.put("<xmlattr>.id", account_id);
       } else {
-        addAccount(account_id, balance);
+        database->addAccount(account_id, balance);
         pt::ptree &created = treeRoot.add("created", "");
         created.put("<xmlattr>.id", account_id);
       }
     } else if (v.first == "symbol") {
       string symbol = v.second.get<string>("<xmlattr>.sym");
       int curr_account_id = v.second.get_child("account").get<int>("<xmlattr>.id");
-      if (checkAccountExist(curr_account_id)) {
+      if (database->checkAccountExist(curr_account_id)) {
         int amount = root.get<int>("create.symbol.account");
-        if (checkPositionExist(symbol, curr_account_id)) {
-          updatePosition(symbol, curr_account_id, amount);
+        if (database->checkPositionExist(symbol, curr_account_id)) {
+          database->updatePosition(symbol, curr_account_id, amount);
         } else {
-          addPosition(symbol, curr_account_id, amount);
+          database->addPosition(symbol, curr_account_id, amount);
         }
         pt::ptree &created = treeRoot.add("created", "");
         created.put("<xmlattr>.sym", symbol);
@@ -432,20 +373,20 @@ void Server::responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeR
   string symbol = v.second.get<string>("<xmlattr>.sym");
   int amount = v.second.get<int>("<xmlattr>.amount");
   double limit_price = v.second.get<double>("<xmlattr>.limit");
-  if (amount >= 0 && !checkValidBuyOrder(account_id, amount, limit_price)) {
+  if (amount >= 0 && !database->checkValidBuyOrder(account_id, amount, limit_price)) {
     pt::ptree &error = treeRoot.add("error", "Insufficient balance");
     error.put("<xmlattr>.sym", symbol);
     error.put("<xmlattr>.amount", amount);
     error.put("<xmlattr>.limit", limit_price);
   }
-  else if (amount < 0 && !checkValidSellOrder(account_id, symbol, amount)) {
+  else if (amount < 0 && !database->checkValidSellOrder(account_id, symbol, amount)) {
     pt::ptree &error = treeRoot.add("error", "Insufficient shares");
     error.put("<xmlattr>.sym", symbol);
     error.put("<xmlattr>.amount", amount);
     error.put("<xmlattr>.limit", limit_price);
   }
   else {
-    int transaction_id = doOrder(account_id, symbol, amount, limit_price);
+    int transaction_id = database->doOrder(account_id, symbol, amount, limit_price);
     pt::ptree &opened = treeRoot.add("opened", "");
     opened.put("<xmlattr>.sym", symbol);
     opened.put("<xmlattr>.amount", amount);
@@ -456,9 +397,9 @@ void Server::responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeR
 
 void Server:: responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot) {
   int transaction_id = v.second.get<int>("<xmlattr>.id");
-  result openedOrders = doQueryOpen(transaction_id);
-  result executedOrders = doQueryExecute(transaction_id);
-  result canceledOrders = doQueryCancel(transaction_id);
+  result openedOrders = database->doQueryOpen(transaction_id);
+  result executedOrders = database->doQueryExecute(transaction_id);
+  result canceledOrders = database->doQueryCancel(transaction_id);
   pt::ptree &status = treeRoot.add("status", "");
   status.put("<xmlattr>.id", transaction_id);
   if (!openedOrders.empty()) {
@@ -486,20 +427,20 @@ void Server:: responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &tree
 
 void Server::responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id){
   int transaction_id = v.second.get<int>("<xmlattr>.id");
-  if (!checkOpenOrderExist(transaction_id)) {
+  if (!database->checkOpenOrderExist(transaction_id)) {
     pt::ptree &error = treeRoot.add("error", "No open order for canellation");
     error.put("<xmlattr>.id", transaction_id);
   } else {
-    doCancel(transaction_id, account_id);
+    database->doCancel(transaction_id, account_id);
     pt::ptree &canceled = treeRoot.add("canceled", "");
     canceled.put("<xmlattr>.id", transaction_id);
-    result canceledOrders = doQueryCancel(transaction_id);
+    result canceledOrders = database->doQueryCancel(transaction_id);
     for (const auto &order : canceledOrders) {
       pt::ptree &status_cancel = canceled.add("canceled", "");
       status_cancel.put("<xmlattr>.shares", order["shares"].as<int>());
       status_cancel.put("<xmlattr>.time", order["time"].as<string>());
     }
-    result executedOrders = doQueryExecute(transaction_id);
+    result executedOrders = database->doQueryExecute(transaction_id);
     for (const auto &order : executedOrders) {
       pt::ptree &status_exec = canceled.add("executed", "");
       status_exec.put("<xmlattr>.shares", order["shares"].as<int>());
@@ -516,21 +457,21 @@ string Server::handleTransaction(pt::ptree &root, string &response){
   stringstream xmlOutput;
   BOOST_FOREACH(pt::ptree::value_type &v, root.get_child("transactions")) {
     if (v.first == "order") {
-      if (!checkAccountExist(account_id)) {
+      if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
         responseOrderTransaction(v, treeRoot, account_id);
       }
     } 
     else if (v.first == "query") {
-      if (!checkAccountExist(account_id)) {
+      if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
         responseQueryTransaction(v, treeRoot);
       }
     }
     else if (v.first == "cancel") {
-      if (!checkAccountExist(account_id)) {
+      if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
         responseCancelTransaction(v, treeRoot, account_id);

@@ -12,6 +12,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/property_tree/detail/file_parser_error.hpp>
 #include <boost/foreach.hpp>
+#include "sqlHandler.hpp"
 namespace pt = boost::property_tree;
 using namespace std;
 using namespace pqxx;
@@ -25,7 +26,8 @@ private:
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    connection *C;
+    connection * C;
+    sqlHandler * database;
 public:
     Server() {
         if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -56,8 +58,6 @@ public:
         C->disconnect();
     }
 
-    void handleClient(int new_socket);
-
     void start() {
         while(true) {
             int new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
@@ -72,9 +72,11 @@ public:
         }
     }
     //handler
+    void handleClient(int new_socket);
     void parseBuffer(char* buffer, int size, string &response);
     string handleCreate(pt::ptree &root, string &result);
     string handleTransaction(pt::ptree &root, string &result);
+    //write xml response
     void responseAccountNotExist(pt::ptree &treeRoot, int account_id);
     void responseOrderTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
     void responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot);
@@ -82,6 +84,7 @@ public:
     //Initial database
     void createTables();
     void initialDatabase();
+<<<<<<< HEAD
     //Database operations
     int addTransaction(int account_id);
     int getAccount(int transaction_id);
@@ -111,4 +114,6 @@ public:
     result searchForCancel(int transaction_id);
     void doCancel(int transaction_id, int account_id);
 
+=======
+>>>>>>> 6104dc9325981ed6f1751924a2752a1dccd15b09
 };
