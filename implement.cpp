@@ -1,6 +1,9 @@
 #include "implement.h"
 using namespace std;
-
+void doCreate(connection *C, int account_id, double balance, string sym, int shares) {
+  addAccount(C, account_id, balance);
+  addPosition(C, sym, account_id, shares);
+}
 // only check for buy right now
 bool orderCheck(connection *C, int account_id, int amount, double limit) {
   nontransaction N(*C);
