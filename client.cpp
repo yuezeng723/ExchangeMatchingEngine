@@ -47,6 +47,21 @@ std::string createQueryTransaction(int account_id, int trans_id) {
     return message_stream.str();
 }
 
+std::string createCancelTransaction(int account_id, int trans_id) {
+    pt::ptree tree;
+    pt::ptree& transactions = tree.add("transactions", "");
+    transactions.put("<xmlattr>.id", account_id);
+    pt::ptree& cancel = transactions.add("cancel", "");
+    cancel.put("<xmlattr>.id", trans_id);
+    std::stringstream xml_stream;
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    std::string xml_request = xml_stream.str();
+    int message_size = xml_request.size();
+    std::stringstream message_stream;
+    message_stream << message_size << std::endl << xml_request;
+    return message_stream.str();
+}
+
 void communicateXML(const std::string& xml_request, const std::string& server_ip, int server_port) {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -79,17 +94,18 @@ void communicateXML(const std::string& xml_request, const std::string& server_ip
 
 int main() {
     std::vector<std::string> xml_requests;
-    std::string openTransactionRequest1 = createOpenTransaction(1, "AAPL", 100, 20);
-    xml_requests.push_back(openTransactionRequest1);
+    xml_requests.push_back(createOpenTransaction(1, "AAPL", 100, 20));
 
-    std::string openTransactionRequest2 = createOpenTransaction(1, "TSL", 200, 5);
-    xml_requests.push_back(openTransactionRequest2);
+    xml_requests.push_back(createOpenTransaction(1, "TSL", 200, 5));
 
-    std::string queryTransactionRequest1 = createQueryTransaction(1, 1);
-    xml_requests.push_back(queryTransactionRequest1);
+    xml_requests.push_back(createQueryTransaction(1, 1));
 
-    std::string queryTransactionRequest2 = createQueryTransaction(1, 2);
-    xml_requests.push_back(queryTransactionRequest2);
+    xml_requests.push_back(createQueryTransaction(1, 2));
+
+    xml_requests.push_back(createCancelTransaction(1, 1));
+
+    xml_requests.push_back(createCancelTransaction(1, 2));
+
 
 
     std::string server_ip = "127.0.0.1";
