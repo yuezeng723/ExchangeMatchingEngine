@@ -11,6 +11,27 @@
 #include <boost/property_tree/xml_parser.hpp>
 namespace pt = boost::property_tree;
 
+std::string createAccountPosition(int account_id, const std::string& sym, int balance, int shares) {
+    pt::ptree tree;
+    pt::ptree& create = tree.add("create", "");
+    pt::ptree& account = create.add("account", "");
+    account.put("<xmlattr>.id", account_id);
+    account.put("<xmlattr>.balance", balance);
+    if (!sym.empty()) {
+        pt::ptree& symbol = create.add("symbol", "");
+        symbol.put("<xmlattr>.sym", sym);
+        pt::ptree& account_elem = symbol.add("account", "");
+        account_elem.put("<xmlattr>.id", account_id);
+        account_elem.put_value(shares);
+    }
+    std::stringstream xml_stream;
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    std::string xml_request = xml_stream.str();
+    int message_size = xml_request.size();
+    std::stringstream message_stream;
+    message_stream << message_size << std::endl << xml_request;
+    return message_stream.str();
+}
 std::string createOpenTransaction(int account_id, const std::string& sym, int amount, int limit) {
     pt::ptree tree;
     pt::ptree& transactions = tree.add("transactions", "");
@@ -19,10 +40,6 @@ std::string createOpenTransaction(int account_id, const std::string& sym, int am
     order.put("<xmlattr>.sym", sym);
     order.put("<xmlattr>.amount", amount);
     order.put("<xmlattr>.limit", limit);
-    // pt::ptree& query = transactions.add("query", "");
-    // query.put("<xmlattr>.id", trans_id);
-    // pt::ptree& cancel = transactions.add("cancel", "");
-    // cancel.put("<xmlattr>.id", trans_id);
     std::stringstream xml_stream;
     pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
     std::string xml_request = xml_stream.str();
@@ -93,8 +110,10 @@ void communicateXML(const std::string& xml_request, const std::string& server_ip
 }
 
 int main() {
-    std::vector<std::string> xml_requests;
-    xml_requests.push_back(createOpenTransaction(1, "AAPL", 100, 20));
+    std::vector<std::string> xml_requests;\
+    xml_requests.push_back(createAccountPosition(1, "AAPL", 1000, 100));
+
+    xml_requests.push_back(createOpenTransaction(1, "AAPL", 100, 7));
 
     xml_requests.push_back(createOpenTransaction(1, "TSL", 200, 5));
 

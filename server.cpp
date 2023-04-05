@@ -219,6 +219,10 @@ void Server:: responseQueryTransaction(pt::ptree::value_type &v, pt::ptree &tree
       status_exec.put("<xmlattr>.time", order["time"].as<string>());
     }
   }
+  else {
+    pt::ptree &error = treeRoot.add("error", "No such transaction");
+    error.put("<xmlattr>.id", transaction_id);
+  }
 }
 
 void Server::responseCancelTransaction(pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id){
