@@ -31,7 +31,7 @@ public:
     void addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price, double limit);
     void addCancelOrder(int transaction_id, int shares, std::time_t time);
     void deleteOpenOrder(int open_id);
-    void updateOpenOrder(int open_id, int shares);
+    bool updateOpenOrder(int open_id, int shares, int version);
     bool checkAccountExist(int account_id);
     bool checkPositionExist(string symbol, int account_id);
     bool checkOpenOrderExist(int transaction_id);
@@ -40,7 +40,7 @@ public:
 
     //Logical operations
     int doOrder(int account_id, string symbol, int amount, double limit);
-    void handleMatch(result::const_iterator c, int shares, int amount, int transaction_id, string symbol, int account_id, double currLimit);
+    bool handleMatch(result::const_iterator c, int shares, int amount, int transaction_id, string symbol, int account_id, double currLimit);
     result orderMatch(string symbol, int amount, double limit);
     result doQueryOpen(int transaction_id);
     result doQueryExecute(int transaction_id);

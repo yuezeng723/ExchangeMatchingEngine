@@ -77,13 +77,19 @@ void sqlHandler::deleteOpenOrder(int open_id) {
     W.exec(sql.str());
     W.commit();
 }
-void sqlHandler::updateOpenOrder(int open_id, int shares) {
+bool sqlHandler::updateOpenOrder(int open_id, int shares, int version) {
     stringstream sql;
     work W(*C);
-    sql << "UPDATE OPENORDER SET shares=shares+" << shares << " WHERE open_id=" << open_id << " RETURNING shares;";
+    sql << "UPDATE OPENORDER SET shares=shares+" << shares << ", version=version+" << 1 <<\
+      " WHERE open_id=" << open_id << " AND version=" << version << " RETURNING shares;";
     result res = W.exec(sql.str());
+    if(res.empty()) {
+      W.abort();
+      return false;
+    }
     W.commit();
     if(res[0]["open_id"].as<int>() == 0) deleteOpenOrder(open_id);
+    return true;
 }
 //execute order
 void sqlHandler::addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price, double limit) {
@@ -186,13 +192,13 @@ int sqlHandler::doOrder(int account_id, string symbol, int amount, double limit)
     if(amount != 0) {
       int shares = c[2].as<int>();
       if(abs(shares) < abs(amount)) {
-        handleMatch(c, shares, amount, transaction_id, symbol, account_id, limit);
+        if(!handleMatch(c, shares, amount, transaction_id, symbol, account_id, limit)) continue;
         amount += shares;
       } else if(abs(shares) > abs(amount)) {
-        handleMatch(c, -amount, amount, transaction_id, symbol, account_id, limit);
+        if(!handleMatch(c, -amount, amount, transaction_id, symbol, account_id, limit)) continue;
         amount = 0;
       } else {
-        handleMatch(c, shares, amount, transaction_id, symbol, account_id, limit);
+        if(!handleMatch(c, shares, amount, transaction_id, symbol, account_id, limit)) continue;
         amount = 0;
       }
     }
@@ -200,12 +206,14 @@ int sqlHandler::doOrder(int account_id, string symbol, int amount, double limit)
   if(amount != 0) addOpenOrder(transaction_id, amount, limit, symbol);
   return transaction_id;
 }
-void sqlHandler::handleMatch(result::const_iterator c, int shares, int amount, int transaction_id, string symbol, int account_id, double currLimit) {
+bool sqlHandler::handleMatch(result::const_iterator c, int shares, int amount, int transaction_id, string symbol, \
+int account_id, double currLimit) {
   double exVal = c[3].as<double>(); //execute value
-  addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), exVal, exVal);
-  updateOpenOrder(c[1].as<int>(), amount);
-  addExecuteOrder(transaction_id, -shares, std::time(nullptr), exVal, currLimit);
+  if(!updateOpenOrder(c[1].as<int>(), amount, c[4].as<int>())) return false;
   updatePosition(symbol, account_id, -shares);
+  addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), exVal, exVal);
+  addExecuteOrder(transaction_id, -shares, std::time(nullptr), exVal, currLimit);
+  return true;
 }
 //match the order
 result sqlHandler::orderMatch(string symbol, int amount, double limit)
@@ -214,10 +222,10 @@ result sqlHandler::orderMatch(string symbol, int amount, double limit)
   stringstream sql;
   string op = "open";
   if(amount < 0) {
-    sql << "SELECT transaction_id, open_id, shares, limit_price FROM OPENORDER WHERE \
+    sql << "SELECT transaction_id, open_id, shares, limit_price, version FROM OPENORDER WHERE \
     symbol=" << N.quote(symbol) << " AND shares>0 AND limit_price>" << limit << "ORDER BY limit_price DESC, open_id ASC;";
   } else {
-    sql << "SELECT transaction_id, open_id, shares, limit_price FROM OPENORDER WHERE \
+    sql << "SELECT transaction_id, open_id, shares, limit_price, version FROM OPENORDER WHERE \
     symbol=" << N.quote(symbol) << " AND shares<0 AND limit_price<" << limit << "ORDER BY limit_price ASC, open_id ASC;";
   }
   result R( N.exec(sql));

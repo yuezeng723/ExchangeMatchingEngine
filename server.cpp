@@ -27,6 +27,7 @@ void Server::createTables() {
     "CREATE TABLE OPENORDER"
     "(open_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
+    "version integer NOT NULL DEFAULT 1,"
     "shares INT NOT NULL,"
     "limit_price DECIMAL(10,2),"
     "symbol VARCHAR(20) NOT NULL);";
