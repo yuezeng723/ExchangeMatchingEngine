@@ -1,5 +1,15 @@
 #include "sqlHandler.hpp"
 
+int sqlHandler::addTransaction(int account_id) {    
+    stringstream sql;
+    work W(*C);
+    sql << "INSERT INTO transaction (account_id) VALUES(" <<account_id << ") RETURNING id;";
+    result res = W.exec(sql.str());
+    int id = res[0]["id"].as<int>();
+    W.commit();
+    return id;
+}
+
 void sqlHandler::addAccount(int account_id, double balance) {  
     stringstream res;  
     try {
@@ -20,6 +30,16 @@ void sqlHandler::updateAccount(int account_id, double addon) {
     W.exec(sql.str());
     W.commit();
 }
+int sqlHandler::getAccount(int transaction_id) {
+    stringstream sql;
+    work W(*C);
+    sql << "SELECT account_id FROM ACCOUNT WHERE id=" << transaction_id << ";";
+    result res = W.exec(sql.str());
+    W.commit();
+    int id = res[0]["id"].as<int>();
+    return id;
+}
+
 void sqlHandler::addPosition(string symbol, int account_id, int shares) {
     stringstream sql;
     work W(*C);
@@ -40,27 +60,12 @@ void sqlHandler::updatePosition(string symbol, int account_id, int shares) { //m
     }
     else W.commit();
 }
+//open order
 void sqlHandler::addOpenOrder(int transaction_id, int shares, double limit_price, string symbol) {
     stringstream sql;
     work W(*C);
     sql << "INSERT INTO openorder (transaction_id, shares, limit_price, symbol) VALUES (" 
     << transaction_id << "," << shares << "," << limit_price << "," << W.quote(symbol) << ");";
-    W.exec(sql.str());
-    W.commit();
-}
-void sqlHandler::addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price) {
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO executeorder (transaction_id, shares, time, execute_price) VALUES (" 
-    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << "), " << execute_price << ");";
-    W.exec(sql.str());
-    W.commit();
-}
-void sqlHandler::addCancelOrder(int transaction_id, int shares, std::time_t time) {
-    stringstream sql;
-    work W(*C);
-    sql << "INSERT INTO cancelorder (transaction_id, shares, time) VALUES (" 
-    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << ")" << ");";
     W.exec(sql.str());
     W.commit();
 }
@@ -74,18 +79,34 @@ void sqlHandler::deleteOpenOrder(int open_id) {
 void sqlHandler::updateOpenOrder(int open_id, int shares) {
     stringstream sql;
     work W(*C);
-    sql << "UPDATE OPENORDER SET shares=shares+" << shares << " WHERE open_id=" << open_id << ";";
-    W.exec(sql.str());
+    sql << "UPDATE OPENORDER SET shares=shares+" << shares << " WHERE open_id=" << open_id << " RETURNING shares;";
+    result res = W.exec(sql.str());
     W.commit();
+    if(res[0]["open_id"].as<int>() == 0) deleteOpenOrder(open_id);
 }
-int sqlHandler::addTransaction() {    
+//execute order
+void sqlHandler::addExecuteOrder(int transaction_id, int shares, std::time_t time, double execute_price, double limit) {
+  int sellAccount = getAccount(transaction_id);
+  if(shares < 0) {
+    updateAccount(sellAccount, -shares*execute_price);
+  }else {
+    updateAccount(sellAccount, shares*(limit-execute_price));
+  }
+  stringstream sql;
+  work W(*C);
+  sql << "INSERT INTO executeorder (transaction_id, shares, time, execute_price) VALUES (" 
+  << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << "), " << execute_price << ");";
+  W.exec(sql.str());
+  W.commit();
+}
+//cancel order
+void sqlHandler::addCancelOrder(int transaction_id, int shares, std::time_t time) {
     stringstream sql;
     work W(*C);
-    sql << "INSERT INTO transaction DEFAULT VALUES RETURNING id;";
-    result res = W.exec(sql.str());
-    int id = res[0]["id"].as<int>();
+    sql << "INSERT INTO cancelorder (transaction_id, shares, time) VALUES (" 
+    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << ")" << ");";
+    W.exec(sql.str());
     W.commit();
-    return id;
 }
 
 // check if the account exists, return true if exists
@@ -156,31 +177,21 @@ bool sqlHandler::checkValidSellOrder(int account_id, string symbol, int amount) 
   if (c[0].as<int>() >= amount) {return true;}
   return false;
 }
-
 int sqlHandler::doOrder(int account_id, string symbol, int amount, double limit) {
-  updateAccount(account_id, -amount*limit);
+  if(amount > 0) updateAccount(account_id, -amount*limit);
   result R = orderMatch(symbol, amount, limit);
-  int transaction_id = addTransaction();
+  int transaction_id = addTransaction(account_id);
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(amount != 0) {
       int shares = c[2].as<int>();
       if(abs(shares) < abs(amount)) {
-        addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
-        deleteOpenOrder(c[1].as<int>());
-        addExecuteOrder(transaction_id, -shares, std::time(nullptr), c[3].as<double>());
-        updatePosition(symbol, account_id, -shares);
+        handleMatch(c, shares, amount, transaction_id, symbol, account_id, limit);
         amount += shares;
       } else if(abs(shares) > abs(amount)) {
-        addExecuteOrder(c[0].as<int>(), -amount, std::time(nullptr), c[3].as<double>());
-        addExecuteOrder(transaction_id, amount, std::time(nullptr), c[3].as<double>());
-        updateOpenOrder(c[1].as<int>(), amount);
-        updatePosition(symbol, account_id, amount);
+        handleMatch(c, -amount, amount, transaction_id, symbol, account_id, limit);
         amount = 0;
       } else {
-        addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), c[3].as<double>());
-        deleteOpenOrder(c[1].as<int>());
-        addExecuteOrder(transaction_id, amount, std::time(nullptr), c[3].as<double>());
-        updatePosition(symbol, account_id, amount);
+        handleMatch(c, shares, amount, transaction_id, symbol, account_id, limit);
         amount = 0;
       }
     }
@@ -188,9 +199,16 @@ int sqlHandler::doOrder(int account_id, string symbol, int amount, double limit)
   if(amount != 0) addOpenOrder(transaction_id, amount, limit, symbol);
   return transaction_id;
 }
-
+void sqlHandler::handleMatch(result::const_iterator c, int shares, int amount, int transaction_id, string symbol, int account_id, double currLimit) {
+  double exVal = c[3].as<double>(); //execute value
+  addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), exVal, exVal);
+  updateOpenOrder(c[1].as<int>(), amount);
+  addExecuteOrder(transaction_id, -shares, std::time(nullptr), exVal, currLimit);
+  updatePosition(symbol, account_id, -shares);
+}
 //match the order
-result sqlHandler::orderMatch(string symbol, int amount, double limit) {
+result sqlHandler::orderMatch(string symbol, int amount, double limit)
+{
   nontransaction N(*C);
   stringstream sql;
   string op = "open";
@@ -213,7 +231,6 @@ result sqlHandler::doQueryOpen(int transaction_id) {
   result R(N.exec(sql));
   return R;
 }
-
 result sqlHandler::doQueryExecute(int transaction_id) {
   nontransaction N(*C);
   stringstream sql;
