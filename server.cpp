@@ -197,61 +197,71 @@ void Server::responseOrderTransaction(sqlHandler * database, pt::ptree::value_ty
   }
 }
 
-void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot) {
+void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id) {
   int transaction_id = v.second.get<int>("<xmlattr>.id");
-  // if(database->getAccount(transaction_id) != )
-  result openedOrders = database->doQueryOpen(transaction_id);
-  result executedOrders = database->doQueryExecute(transaction_id);
-  result canceledOrders = database->doQueryCancel(transaction_id);
-  pt::ptree &status = treeRoot.add("status", "");
-  status.put("<xmlattr>.id", transaction_id);
-  if (!openedOrders.empty()) {
-    for (const auto &order : openedOrders) {
-      pt::ptree &status_open = status.add("open", "");
-      status_open.put("<xmlattr>.shares", order["shares"].as<double>());
-    }
-  }
-  if (!canceledOrders.empty()) {
-    for (const auto &order : canceledOrders) {
-      pt::ptree &status_cancel = status.add("canceled", "");
-      status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
-      status_cancel.put("<xmlattr>.time", order["time"].as<string>());
-    }
-  }
-  if (!executedOrders.empty()) {
-    for (const auto &order : executedOrders) {
-      pt::ptree &status_exec = status.add("executed", "");
-      status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
-      status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
-      status_exec.put("<xmlattr>.time", order["time"].as<string>());
-    }
-  }
-  if (openedOrders.empty() && executedOrders.empty() && canceledOrders.empty()) {
-    pt::ptree &error = treeRoot.add("error", "No such transaction");
+  if (account_id != database->getAccount(transaction_id)) {
+    pt::ptree &error = treeRoot.add("error", "Invalid transaction id");
     error.put("<xmlattr>.id", transaction_id);
+  } else {
+    result openedOrders = database->doQueryOpen(transaction_id);
+    result executedOrders = database->doQueryExecute(transaction_id);
+    result canceledOrders = database->doQueryCancel(transaction_id);
+    pt::ptree &status = treeRoot.add("status", "");
+    status.put("<xmlattr>.id", transaction_id);
+    if (!openedOrders.empty()) {
+      for (const auto &order : openedOrders) {
+        pt::ptree &status_open = status.add("open", "");
+        status_open.put("<xmlattr>.shares", order["shares"].as<double>());
+      }
+    }
+    if (!canceledOrders.empty()) {
+      for (const auto &order : canceledOrders) {
+        pt::ptree &status_cancel = status.add("canceled", "");
+        status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
+        status_cancel.put("<xmlattr>.time", order["time"].as<string>());
+      }
+    }
+    if (!executedOrders.empty()) {
+      for (const auto &order : executedOrders) {
+        pt::ptree &status_exec = status.add("executed", "");
+        status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
+        status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
+        status_exec.put("<xmlattr>.time", order["time"].as<string>());
+      }
+    }
+    if (openedOrders.empty() && executedOrders.empty() && canceledOrders.empty()) {
+      pt::ptree &error = treeRoot.add("error", "No such transaction");
+      error.put("<xmlattr>.id", transaction_id);
+    }
   }
 }
 
 void Server::responseCancelTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id){
   int transaction_id = v.second.get<int>("<xmlattr>.id");
-  if (!database->doCancel(transaction_id, account_id)) {
-    pt::ptree &error = treeRoot.add("error", "No open order for canellation");
-    error.put("<xmlattr>.id", transaction_id);
+  if (account_id != database->getAccount(transaction_id)) {
+  pt::ptree &error = treeRoot.add("error", "Invalid transaction id");
+  error.put("<xmlattr>.id", transaction_id);
   } else {
-    pt::ptree &canceled = treeRoot.add("canceled", "");
-    canceled.put("<xmlattr>.id", transaction_id);
-    result canceledOrders = database->doQueryCancel(transaction_id);
-    for (const auto &order : canceledOrders) {
-      pt::ptree &status_cancel = canceled.add("canceled", "");
-      status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
-      status_cancel.put("<xmlattr>.time", order["time"].as<string>());
-    }
-    result executedOrders = database->doQueryExecute(transaction_id);
-    for (const auto &order : executedOrders) {
-      pt::ptree &status_exec = canceled.add("executed", "");
-      status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
-      status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
-      status_exec.put("<xmlattr>.time", order["time"].as<string>());
+    if (!database->checkOpenOrderExist(transaction_id)) {
+      pt::ptree &error = treeRoot.add("error", "No open order for canellation");
+      error.put("<xmlattr>.id", transaction_id);
+    } else {
+      database->doCancel(transaction_id, account_id);
+      pt::ptree &canceled = treeRoot.add("canceled", "");
+      canceled.put("<xmlattr>.id", transaction_id);
+      result canceledOrders = database->doQueryCancel(transaction_id);
+      for (const auto &order : canceledOrders) {
+        pt::ptree &status_cancel = canceled.add("canceled", "");
+        status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
+        status_cancel.put("<xmlattr>.time", order["time"].as<string>());
+      }
+      result executedOrders = database->doQueryExecute(transaction_id);
+      for (const auto &order : executedOrders) {
+        pt::ptree &status_exec = canceled.add("executed", "");
+        status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
+        status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
+        status_exec.put("<xmlattr>.time", order["time"].as<string>());
+      }
     }
   }
 }
@@ -273,7 +283,7 @@ string Server::handleTransaction(sqlHandler * database, pt::ptree &root, string 
       if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
-        responseQueryTransaction(database, v, treeRoot);
+        responseQueryTransaction(database, v, treeRoot, account_id);
       }
     }
     else if (v.first == "cancel") {

@@ -35,6 +35,10 @@ int sqlHandler::getAccount(int transaction_id) {
     work W(*C);
     sql << "SELECT account_id FROM transaction WHERE id=" << transaction_id << ";";
     result res = W.exec(sql.str());
+    if(res.affected_rows() == 0) {
+        W.abort();
+        return -1;
+    }
     W.commit();
     int id = res[0]["account_id"].as<int>();
     return id;

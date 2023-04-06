@@ -174,7 +174,7 @@ int main() {
     xml_requests.push_back(createOrderTransaction(1, "TSL", 200, 5));
     //add
     xml_requests.push_back(createOrderTransaction(2, "AAPL", -100, 4));
-    xml_requests.push_back(createQueryTransaction(1, 1));
+    xml_requests.push_back(createQueryTransaction(1, 2));
     xml_requests.push_back(createQueryTransaction(2, 2));
 //origin
     // xml_requests.push_back(createQueryTransaction(1, 1));
@@ -187,7 +187,7 @@ int main() {
 
 
     // testCreateAccount(xml_requests);
-    testOrderMatching_FullMatch(xml_requests);
+    // testOrderMatching_FullMatch(xml_requests);
     // testOrderMatching_PartialMatch(xml_requests); 
 
     std::string server_ip = "127.0.0.1";

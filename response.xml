@@ -72,3 +72,521 @@
 	</status>
 </result>
 
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<executed shares="-100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="1">Account already exists</error>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Account already exists</error>
+	<created sym="TSL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="7" id="3"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="4"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<executed shares="-100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<executed shares="-100" price="7" time="23:16:28"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<executed shares="-100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="1">Account already exists</error>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Account already exists</error>
+	<created sym="TSL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="7" id="3"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="4"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<executed shares="-100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<executed shares="100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<executed shares="-100" price="7" time="23:19:03"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Invalid transaction id</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Invalid transaction id</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Invalid transaction id</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Invalid transaction id</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Invalid transaction id</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Invalid transaction id</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="1"/>
+	<created sym="AAPL" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<created id="2"/>
+	<created sym="AAPL" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="1"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error sym="TSL" amount="200" limit="5">Insufficient balance</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="4" id="2"/>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<error id="2">Invalid transaction id</error>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<executed shares="-100" price="7" time="00:20:52"/>
+	</status>
+</result>
+
