@@ -199,6 +199,7 @@ void Server::responseOrderTransaction(sqlHandler * database, pt::ptree::value_ty
 
 void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id) {
   int transaction_id = v.second.get<int>("<xmlattr>.id");
+  int accountId = database->getAccount(transaction_id);
   if (account_id != database->getAccount(transaction_id)) {
     pt::ptree &error = treeRoot.add("error", "Invalid transaction id");
     error.put("<xmlattr>.id", transaction_id);

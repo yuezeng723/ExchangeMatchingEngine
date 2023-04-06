@@ -116,6 +116,7 @@ void testCreateAccount(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createAccountPosition(3, "GOOGLE", 30000, 300));//create account 3 with 30000 balance and 300 shares of AAPL
     xml_requests.push_back(createAccountPosition(4, "META", 40000, 400));//create account 4 with 40000 balance and 400 shares of TSL
 }
+
 void testOrderMatching_FullMatch(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createAccountPosition(1, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
     xml_requests.push_back(createAccountPosition(2, "TSL", 20000, 200));//create account 2 with 20000 balance and 200 shares of TSL
@@ -123,16 +124,12 @@ void testOrderMatching_FullMatch(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createQueryTransaction(1, 1));
 
     xml_requests.push_back(createOrderTransaction(2, "AAPL", 100, 7)); //account 2 buys 100 shares of AAPL at 7
-    xml_requests.push_back(createQueryTransaction(2, 1));
+    xml_requests.push_back(createQueryTransaction(2, 1));//invalid tranction id, no permission to access the transaction
     //the order should be matched
     xml_requests.push_back(createQueryTransaction(1, 1));
     xml_requests.push_back(createQueryTransaction(2, 2));
-
-    xml_requests.push_back(createQueryTransaction(1, 1));
-    xml_requests.push_back(createQueryTransaction(2, 2));
-
-
 }
+
 void testOrderMatching_PartialMatch(std::vector<std::string>& xml_requests){
     //create new account with new symbol
     xml_requests.push_back(createAccountPosition(5, "ALPHA", 50000, 500));//create account 5 with 50000 balance and 500 shares of ALPHA

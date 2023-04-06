@@ -34,10 +34,10 @@ void sqlHandler::updateAccount(int account_id, double addon) {
 int sqlHandler::getAccount(int transaction_id) {
     stringstream sql;
     work W(*C);
-    sql << "SELECT account_id FROM ACCOUNT WHERE id=" << transaction_id << ";";
+    sql << "SELECT account_id FROM TRANSACTION WHERE id=" << transaction_id << ";";
     result res = W.exec(sql.str());
     W.commit();
-    int id = res[0]["id"].as<int>();
+    int id = res[0]["account_id"].as<int>();
     return id;
 }
 

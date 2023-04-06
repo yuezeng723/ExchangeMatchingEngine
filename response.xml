@@ -35,9 +35,7 @@
 -----------Server response-----------
 <?xml version="1.0" encoding="utf-8"?>
 <result>
-	<status id="1">
-		<open shares="-100"/>
-	</status>
+	<error id="1">Invalid transaction id</error>
 </result>
 
 -----------Server response-----------
