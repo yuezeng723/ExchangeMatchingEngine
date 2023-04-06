@@ -1,0 +1,10 @@
+Danger log
+1. Handling race condition in database when multiple clients connect to server.
+	Applying optimistic concurrency control.
+    Avoiding the read-modify-write cycle by doing the work in SQL.
+2. Clients could query and cancel all the transactions in our first design but is later found unreasonable.
+	Always check whether the transaction belongs to the client’s account whenever handling a query or cancel request.
+3. All kinds of transactions are put in the same relation at first which is hard to do query and response certain information
+    Divide into openorder, executeorder, cancelorder relations in later design.
+4. ThreadPool added server to handle more than 500 clients connection.
+5.Checked for whether the account is afford for the client order request, either for sell or buy.
