@@ -79,7 +79,7 @@ public:
     //write xml response
     void responseAccountNotExist(pt::ptree &treeRoot, int account_id);
     void responseOrderTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
-    void responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot);
+    void responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
     void responseCancelTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);
     //Initial database
     void createTables();
