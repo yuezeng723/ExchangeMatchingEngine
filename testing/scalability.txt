@@ -1,0 +1,46 @@
+*************************Scalability Test*************************
+Make three testing goups
+        sudo cgcreate -g cpu:/my_cgroup_0
+        sudo cgset -r cpuset.cpus="0" my_cgroup_0
+
+        sudo cgcreate -g cpu:/my_cgroup_01
+        sudo cgset -r cpuset.cpus="0,1" my_cgroup_01
+
+        sudo cgcreate -g cpu:/my_cgroup_0123
+        sudo cgset -r cpuset.cpus="0,1,2,3" my_cgroup_0123
+
+*******************  ONE CORE ************************************
+    Server core: 0
+    Client execution performance:
+        Elapsed time: 0:13.84
+        User CPU time: 2.11
+        System CPU time: 0.71
+
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_0 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+*******************  TWO CORES ***********************************
+    Server core: 0, 1
+    Client execution performance:
+        Elapsed time: 0:13.52
+        User CPU time: 2.10
+        System CPU time: 0.68
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_01 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+*******************  FOUR CORES **********************************
+    Server core: 0, 1, 2, 3
+        Client execution performance:
+
+
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_0123 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh

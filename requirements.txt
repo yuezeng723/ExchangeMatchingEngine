@@ -15,3 +15,6 @@ sudo cgcreate -t $USER:$USER -a $USER:$USER -g cpu:/testusage
 cgset -r cpu.shares=1024 testusage
 sudo cgget -g cpu:/testusage
 
+sudo cgcreate -g cpu:/my_cgroup
+sudo cgset -r cpuset.cpus="0" my_cgroup
+sudo cgexec -g cpu:/my_cgroup ./server
