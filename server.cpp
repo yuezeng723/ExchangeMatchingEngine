@@ -206,7 +206,6 @@ void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_t
     result openedOrders = database->doQueryOpen(transaction_id);
     result executedOrders = database->doQueryExecute(transaction_id);
     result canceledOrders = database->doQueryCancel(transaction_id);
-    cout << "openOrders size: " << openedOrders.size() << endl;
     pt::ptree &status = treeRoot.add("status", "");
     status.put("<xmlattr>.id", transaction_id);
     if (!openedOrders.empty()) {
