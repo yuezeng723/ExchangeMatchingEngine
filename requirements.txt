@@ -14,3 +14,4 @@ sudo cat /sys/fs/cgroup/cpuset/cpuset.cpus
 sudo cgcreate -t $USER:$USER -a $USER:$USER -g cpu:/testusage
 cgset -r cpu.shares=1024 testusage
 sudo cgget -g cpu:/testusage
+

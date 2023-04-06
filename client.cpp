@@ -125,13 +125,15 @@ void testOrderMatching_FullMatch(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createQueryTransaction(1, 1));
 
     xml_requests.push_back(createOrderTransaction(2, "AAPL", 100, 7)); //account 2 buys 100 shares of AAPL at 7
-    xml_requests.push_back(createQueryTransaction(2, 1));//invalid tranction id, no permission to access the transaction
-    //the order should be matched
-    xml_requests.push_back(createQueryTransaction(1, 1));
+
     xml_requests.push_back(createQueryTransaction(2, 2));
     //the order should be matched
+    // xml_requests.push_back(createQueryTransaction(2, 1));
+    // xml_requests.push_back(createQueryTransaction(1, 2));
+
     xml_requests.push_back(createQueryTransaction(1, 1));
     xml_requests.push_back(createQueryTransaction(2, 2));
+
 }
 
 void testOrderMatching_PartialMatch(std::vector<std::string>& xml_requests){
@@ -173,7 +175,8 @@ int main() {
 
 
     for (size_t i = 0; i < xml_requests.size(); ++i) {
-        std::cout << "Sending XML Request " << (i + 1) << ":\n" << xml_requests[i] << std::endl;
+        //std::cout << "Sending XML Request " << (i + 1) << ":\n" << xml_requests[i] << std::endl;
+        std::cout << "Sending " << (i + 1) << ":\n" << std::endl;
         communicateXML(xml_requests[i], server_ip, server_port);
     }
 

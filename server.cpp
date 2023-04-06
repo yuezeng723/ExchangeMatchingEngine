@@ -91,7 +91,7 @@ void Server::handleClient(int client_fd) {
 }
 
 void Server::parseBuffer(sqlHandler * database, char* buffer, int size, string &response) {
-  cout << "the request size is: " << size << endl;
+  // cout << "the request size is: " << size << endl;
   stringstream bufferStream;
   bufferStream.write(buffer, size);
   string firstLine;
