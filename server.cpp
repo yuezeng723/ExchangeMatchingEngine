@@ -13,7 +13,7 @@ void Server::createTables() {
     "(position_id SERIAL PRIMARY KEY,"
     "symbol VARCHAR(20) NOT NULL,"
     "account_id INT NOT NULL,"
-    "shares INT NOT NULL,"
+    "shares DECIMAL(10,2) NOT NULL,"
     "FOREIGN KEY(account_id) REFERENCES ACCOUNT(account_id)"
     "ON DELETE SET NULL ON UPDATE CASCADE);"; 
 
@@ -28,21 +28,21 @@ void Server::createTables() {
     "(open_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
     "version integer NOT NULL DEFAULT 1,"
-    "shares INT NOT NULL,"
+    "shares DECIMAL(10,2) NOT NULL,"
     "limit_price DECIMAL(10,2),"
     "symbol VARCHAR(20) NOT NULL);";
   string executeSQL =
     "CREATE TABLE EXECUTEORDER"
     "(execute_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
-    "shares INT NOT NULL,"
+    "shares DECIMAL(10,2) NOT NULL,"
     "time TIME,"
     "execute_price DECIMAL(10,2));";
   string cancelSQL =
     "CREATE TABLE CANCELORDER"
     "(cancel_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
-    "shares INT NOT NULL,"
+    "shares DECIMAL(10,2) NOT NULL,"
     "time TIME);";
 
   
@@ -143,7 +143,7 @@ string Server::handleCreate(sqlHandler * database, pt::ptree &root, string &resp
       string symbol = v.second.get<string>("<xmlattr>.sym");
       int curr_account_id = v.second.get_child("account").get<int>("<xmlattr>.id");
       if (database->checkAccountExist(curr_account_id)) {
-        int amount = root.get<int>("create.symbol.account");
+        double amount = root.get<double>("create.symbol.account");
         if (database->checkPositionExist(symbol, curr_account_id)) {
           database->updatePosition(symbol, curr_account_id, amount);
         } else {
@@ -173,7 +173,7 @@ void Server::responseAccountNotExist(pt::ptree &treeRoot, int account_id) {
 
 void Server::responseOrderTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id) {
   string symbol = v.second.get<string>("<xmlattr>.sym");
-  int amount = v.second.get<int>("<xmlattr>.amount");
+  double amount = v.second.get<double>("<xmlattr>.amount");
   double limit_price = v.second.get<double>("<xmlattr>.limit");
   if (amount >= 0 && !database->checkValidBuyOrder(account_id, amount, limit_price)) {
     pt::ptree &error = treeRoot.add("error", "Insufficient balance");
@@ -199,7 +199,6 @@ void Server::responseOrderTransaction(sqlHandler * database, pt::ptree::value_ty
 
 void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id) {
   int transaction_id = v.second.get<int>("<xmlattr>.id");
-  int accountId = database->getAccount(transaction_id);
   if (account_id != database->getAccount(transaction_id)) {
     pt::ptree &error = treeRoot.add("error", "Invalid transaction id");
     error.put("<xmlattr>.id", transaction_id);
@@ -212,20 +211,20 @@ void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_t
     if (!openedOrders.empty()) {
       for (const auto &order : openedOrders) {
         pt::ptree &status_open = status.add("open", "");
-        status_open.put("<xmlattr>.shares", order["shares"].as<int>());
+        status_open.put("<xmlattr>.shares", order["shares"].as<double>());
       }
     }
     if (!canceledOrders.empty()) {
       for (const auto &order : canceledOrders) {
         pt::ptree &status_cancel = status.add("canceled", "");
-        status_cancel.put("<xmlattr>.shares", order["shares"].as<int>());
+        status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
         status_cancel.put("<xmlattr>.time", order["time"].as<string>());
       }
     }
     if (!executedOrders.empty()) {
       for (const auto &order : executedOrders) {
         pt::ptree &status_exec = status.add("executed", "");
-        status_exec.put("<xmlattr>.shares", order["shares"].as<int>());
+        status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
         status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
         status_exec.put("<xmlattr>.time", order["time"].as<string>());
       }
@@ -253,13 +252,13 @@ void Server::responseCancelTransaction(sqlHandler * database, pt::ptree::value_t
       result canceledOrders = database->doQueryCancel(transaction_id);
       for (const auto &order : canceledOrders) {
         pt::ptree &status_cancel = canceled.add("canceled", "");
-        status_cancel.put("<xmlattr>.shares", order["shares"].as<int>());
+        status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
         status_cancel.put("<xmlattr>.time", order["time"].as<string>());
       }
       result executedOrders = database->doQueryExecute(transaction_id);
       for (const auto &order : executedOrders) {
         pt::ptree &status_exec = canceled.add("executed", "");
-        status_exec.put("<xmlattr>.shares", order["shares"].as<int>());
+        status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
         status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
         status_exec.put("<xmlattr>.time", order["time"].as<string>());
       }
@@ -284,6 +283,7 @@ string Server::handleTransaction(sqlHandler * database, pt::ptree &root, string 
       if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
       } else {
+        responseQueryTransaction(database, v, treeRoot, account_id);
         responseQueryTransaction(database, v, treeRoot, account_id);
       }
     }
