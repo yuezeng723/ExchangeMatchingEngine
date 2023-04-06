@@ -1,5 +1,6 @@
 *************************Scalability Test*************************
-Make three testing goups
+Note: for the following testing, every time reboost the vm
+Make three testing goups:
         sudo cgcreate -g cpu:/my_cgroup_0
         sudo cgset -r cpuset.cpus="0" my_cgroup_0
 
@@ -8,13 +9,15 @@ Make three testing goups
 
         sudo cgcreate -g cpu:/my_cgroup_0123
         sudo cgset -r cpuset.cpus="0,1,2,3" my_cgroup_0123
-
+******************************************************************
+Test connect 1000 clients
 *******************  ONE CORE ************************************
     Server core: 0
     Client execution performance:
-        Elapsed time: 0:13.84
-        User CPU time: 2.11
-        System CPU time: 0.71
+        Elapsed time: 4:06.69
+        User CPU time: 2.02
+        System CPU time: 0.63
+        ####Killed because it paused
 
     command:
         Server side:
@@ -25,8 +28,8 @@ Make three testing goups
 *******************  TWO CORES ***********************************
     Server core: 0, 1
     Client execution performance:
-        Elapsed time: 0:13.52
-        User CPU time: 2.10
+        Elapsed time: 1:51.95
+        User CPU time: 2.11
         System CPU time: 0.68
     command:
         Server side:
@@ -36,8 +39,90 @@ Make three testing goups
 
 *******************  FOUR CORES **********************************
     Server core: 0, 1, 2, 3
-        Client execution performance:
+    Client execution performance:
+        Elapsed time: 0:13.45
+        User CPU time: 2.06
+        System CPU time: 0.70
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_0123 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
 
+
+******************************************************************
+Test connect 500 clients
+*******************  ONE CORE ************************************
+    Server core: 0
+    Client execution performance:
+        Elapsed time: 0:09.98
+        User CPU time: 1.01
+        System CPU time: 0.35
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_0 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+*******************  TWO CORES ***********************************
+    Server core: 0, 1
+    Client execution performance:
+        Elapsed time: 0:17.71
+        User CPU time: 1.03
+        System CPU time: 0.29
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_01 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+*******************  FOUR CORES **********************************
+    Server core: 0, 1, 2, 3
+    Client execution performance:
+        Elapsed time: 5:30.30
+        User CPU time: 0.10
+        System CPU time: 0.09
+        ####Killed because it paused
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_0123 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+
+******************************************************************
+Test connect 100 clients
+*******************  ONE CORE ************************************
+    Server core: 0
+    Client execution performance:
+        Elapsed time: 0:02.79
+        User CPU time: 0.21
+        System CPU time: 0.05
+
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_0 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+*******************  TWO CORES ***********************************
+    Server core: 0, 1
+    Client execution performance:
+        Elapsed time: 0:03.70
+        User CPU time: 0.20
+        System CPU time: 0.05
+    command:
+        Server side:
+        sudo cgexec -g cpu:/my_cgroup_01 ./server
+        Client side:
+        /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+*******************  FOUR CORES **********************************
+    Server core: 0, 1, 2, 3
+    Client execution performance:
+        Elapsed time: 0:02.50
+        User CPU time: 0.19
+        System CPU time: 0.07
 
     command:
         Server side:

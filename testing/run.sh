@@ -2,7 +2,7 @@
 
 for i in {1..2}
 do
-    ./testing/client &
+    ./client &
 done
 
 wait
