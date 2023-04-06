@@ -199,6 +199,7 @@ void Server::responseOrderTransaction(sqlHandler * database, pt::ptree::value_ty
 
 void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot) {
   int transaction_id = v.second.get<int>("<xmlattr>.id");
+  // if(database->getAccount(transaction_id) != )
   result openedOrders = database->doQueryOpen(transaction_id);
   result executedOrders = database->doQueryExecute(transaction_id);
   result canceledOrders = database->doQueryCancel(transaction_id);

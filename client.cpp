@@ -11,7 +11,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 namespace pt = boost::property_tree;
 
-std::string createAccountPosition(int account_id, const std::string& sym, int balance, int shares) {
+std::string createAccountPosition(int account_id, const std::string& sym, int balance, double shares) {
     pt::ptree tree;
     pt::ptree& create = tree.add("create", "");
     pt::ptree& account = create.add("account", "");
@@ -32,7 +32,7 @@ std::string createAccountPosition(int account_id, const std::string& sym, int ba
     message_stream << message_size << std::endl << xml_request;
     return message_stream.str();
 }
-std::string createOpenTransaction(int account_id, const std::string& sym, int amount, int limit) {
+std::string createOpenTransaction(int account_id, const std::string& sym, double amount, double limit) {
     pt::ptree tree;
     pt::ptree& transactions = tree.add("transactions", "");
     transactions.put("<xmlattr>.id", account_id);
@@ -112,18 +112,24 @@ void communicateXML(const std::string& xml_request, const std::string& server_ip
 int main() {
     std::vector<std::string> xml_requests;
     xml_requests.push_back(createAccountPosition(1, "AAPL", 1000, 100));
+    //add
+    xml_requests.push_back(createAccountPosition(2, "AAPL", 1000, 100));
 
     xml_requests.push_back(createOpenTransaction(1, "AAPL", 100, 7));
 
     xml_requests.push_back(createOpenTransaction(1, "TSL", 200, 5));
-
+    //add
+    xml_requests.push_back(createOpenTransaction(2, "AAPL", -100, 4));
     xml_requests.push_back(createQueryTransaction(1, 1));
+    xml_requests.push_back(createQueryTransaction(2, 2));
+//origin
+    // xml_requests.push_back(createQueryTransaction(1, 1));
 
-    xml_requests.push_back(createQueryTransaction(1, 2));
+    // xml_requests.push_back(createQueryTransaction(1, 2));
 
-    xml_requests.push_back(createCancelTransaction(1, 1));
+    // xml_requests.push_back(createCancelTransaction(1, 1));
 
-    xml_requests.push_back(createCancelTransaction(1, 2));
+    // xml_requests.push_back(createCancelTransaction(1, 2));
 
 
 

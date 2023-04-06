@@ -33,10 +33,10 @@ void sqlHandler::updateAccount(int account_id, double addon) {
 int sqlHandler::getAccount(int transaction_id) {
     stringstream sql;
     work W(*C);
-    sql << "SELECT account_id FROM ACCOUNT WHERE id=" << transaction_id << ";";
+    sql << "SELECT account_id FROM transaction WHERE id=" << transaction_id << ";";
     result res = W.exec(sql.str());
     W.commit();
-    int id = res[0]["id"].as<int>();
+    int id = res[0]["account_id"].as<int>();
     return id;
 }
 
@@ -72,10 +72,9 @@ void sqlHandler::addOpenOrder(int transaction_id, double shares, double limit_pr
 bool sqlHandler::deleteOpenOrder(int open_id, int version) {
     stringstream sql;
     work W(*C);
-    cout << "****++**" <<endl;
     sql << "DELETE FROM OPENORDER WHERE open_id=" << open_id << " AND version=" << version << ";"; 
     result res = W.exec(sql.str());
-    if(res.empty()) {
+    if(res.affected_rows() == 0) {
       W.abort();
       return false;
     }
@@ -93,7 +92,7 @@ bool sqlHandler::updateOpenOrder(int open_id, double shares, int version) {
       return false;
     }
     W.commit();
-    if(res[0]["open_id"].as<int>() == 0) return deleteOpenOrder(open_id, version);
+    if(res[0]["shares"].as<double>() == 0) return deleteOpenOrder(open_id, version+1);
     return true;
 }
 //execute order
@@ -190,12 +189,14 @@ bool sqlHandler::checkValidSellOrder(int account_id, string symbol, double amoun
   return false;
 }
 int sqlHandler::doOrder(int account_id, string symbol, double amount, double limit) {
+  
   if(amount > 0) updateAccount(account_id, -amount*limit);
   result R = orderMatch(symbol, amount, limit);
   int transaction_id = addTransaction(account_id);
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(amount != 0) {
       double shares = c[2].as<double>();
+      cout << shares << amount <<endl;
       if(abs(shares) < abs(amount)) {
         if(!handleMatch(c, shares, amount, transaction_id, symbol, account_id, limit)) continue;
         amount += shares;
