@@ -233,10 +233,10 @@ result sqlHandler::orderMatch(string symbol, double amount, double limit)
   string op = "open";
   if(amount < 0) {
     sql << "SELECT transaction_id, open_id, shares, limit_price, version FROM OPENORDER WHERE \
-    symbol=" << N.quote(symbol) << " AND shares>0 AND limit_price>" << limit << "ORDER BY limit_price DESC, open_id ASC;";
+    symbol=" << N.quote(symbol) << " AND shares>0 AND limit_price>=" << limit << "ORDER BY limit_price DESC, open_id ASC;";
   } else {
     sql << "SELECT transaction_id, open_id, shares, limit_price, version FROM OPENORDER WHERE \
-    symbol=" << N.quote(symbol) << " AND shares<0 AND limit_price<" << limit << "ORDER BY limit_price ASC, open_id ASC;";
+    symbol=" << N.quote(symbol) << " AND shares<0 AND limit_price<=" << limit << "ORDER BY limit_price ASC, open_id ASC;";
   }
   result R( N.exec(sql));
   return R;

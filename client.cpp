@@ -41,10 +41,10 @@ std::string createOrderTransaction(int account_id, const std::string& sym, int a
     order.put("<xmlattr>.amount", amount);
     order.put("<xmlattr>.limit", limit);
 
-    pt::ptree& order1 = transactions.add("order", "");
-    order1.put("<xmlattr>.sym", sym);
-    order1.put("<xmlattr>.amount", amount*2);
-    order1.put("<xmlattr>.limit", limit+2);
+    // pt::ptree& order1 = transactions.add("order", "");
+    // order1.put("<xmlattr>.sym", sym);
+    // order1.put("<xmlattr>.amount", amount*2);
+    // order1.put("<xmlattr>.limit", limit+2);
 
     std::stringstream xml_stream;
     pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>('\t', 1));
@@ -129,10 +129,10 @@ void testOrderMatching_FullMatch(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createQueryTransaction(1, 1));
 
     xml_requests.push_back(createOrderTransaction(2, "AAPL", 100, 7)); //account 2 buys 100 shares of AAPL at 7
-    xml_requests.push_back(createQueryTransaction(2, 1));
-    //the order should be matched
-    xml_requests.push_back(createQueryTransaction(1, 1));
     xml_requests.push_back(createQueryTransaction(2, 2));
+    //the order should be matched
+    // xml_requests.push_back(createQueryTransaction(2, 1));
+    // xml_requests.push_back(createQueryTransaction(1, 2));
 
     xml_requests.push_back(createQueryTransaction(1, 1));
     xml_requests.push_back(createQueryTransaction(2, 2));
@@ -171,18 +171,18 @@ void testCancelOrder_PartialCancel(std::vector<std::string>& xml_requests){
 }
 int main() {
     std::vector<std::string> xml_requests;
-    xml_requests.push_back(createAccountPosition(1, "AAPL", 5000, 100));
-    //add
-    xml_requests.push_back(createAccountPosition(2, "AAPL", 1000, 100));
+    // xml_requests.push_back(createAccountPosition(1, "AAPL", 5000, 100));
+    // //add
+    // xml_requests.push_back(createAccountPosition(2, "AAPL", 1000, 100));
 
-    xml_requests.push_back(createOrderTransaction(1, "AAPL", 100, 7));
+    // xml_requests.push_back(createOrderTransaction(1, "AAPL", 100, 7));
 
-    xml_requests.push_back(createOrderTransaction(1, "TSL", 200, 5));
-    //add
-    xml_requests.push_back(createOrderTransaction(2, "AAPL", -100, 4));
-    xml_requests.push_back(createQueryTransaction(1, 2));
-    xml_requests.push_back(createQueryTransaction(2, 4));
-    xml_requests.push_back(createQueryTransaction(2, 5));
+    // xml_requests.push_back(createOrderTransaction(1, "TSL", 200, 5));
+    // //add
+    // xml_requests.push_back(createOrderTransaction(2, "AAPL", -100, 4));
+    // xml_requests.push_back(createQueryTransaction(1, 2));
+    // xml_requests.push_back(createQueryTransaction(2, 4));
+    // xml_requests.push_back(createQueryTransaction(2, 5));
 //origin
     // xml_requests.push_back(createQueryTransaction(1, 1));
 
@@ -194,7 +194,7 @@ int main() {
 
 
     // testCreateAccount(xml_requests);
-    // testOrderMatching_FullMatch(xml_requests);
+    testOrderMatching_FullMatch(xml_requests);
     // testOrderMatching_PartialMatch(xml_requests); 
 
     std::string server_ip = "127.0.0.1";

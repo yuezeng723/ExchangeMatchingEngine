@@ -110,6 +110,7 @@ void Server::parseBuffer(sqlHandler * database, char* buffer, int size, string &
   pt::read_xml(contentStream, root);
 
   string rootTag = root.begin()->first;
+  cout << "root tag:" << rootTag << endl;
   if (rootTag == "create") {
     handleCreate(database, root, response);
   } else if (rootTag == "transactions") {
@@ -272,6 +273,7 @@ string Server::handleTransaction(sqlHandler * database, pt::ptree &root, string 
   int account_id = root.get<int>("transactions.<xmlattr>.id");
   stringstream xmlOutput;
   BOOST_FOREACH(pt::ptree::value_type &v, root.get_child("transactions")) {
+      cout << v.first << endl;
     if (v.first == "order") {
       if (!database->checkAccountExist(account_id)) {
         responseAccountNotExist(treeRoot, account_id);
