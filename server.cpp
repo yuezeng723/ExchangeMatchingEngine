@@ -159,8 +159,9 @@ string Server::handleCreate(sqlHandler * database, pt::ptree &root, string &resp
       }
     }
   }
-  stringstream xmlOutput;
-  pt::write_xml(xmlOutput, tree);
+  std::stringstream xmlOutput;
+  pt::xml_writer_settings<std::string> settings('\t', 1); 
+  pt::write_xml(xmlOutput, tree, settings);
   response = xmlOutput.str();
   return response;
 }
@@ -283,7 +284,9 @@ string Server::handleTransaction(sqlHandler * database, pt::ptree &root, string 
       }
     }
   }
-  pt::write_xml(xmlOutput, tree);
+  
+  pt::xml_writer_settings<std::string> settings('\t', 1); 
+  pt::write_xml(xmlOutput, tree, settings);
   response = xmlOutput.str();
   return response;
 }

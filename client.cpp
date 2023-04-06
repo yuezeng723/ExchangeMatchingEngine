@@ -25,7 +25,7 @@ std::string createAccountPosition(int account_id, const std::string& sym, int ba
         account_elem.put_value(shares);
     }
     std::stringstream xml_stream;
-    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>('\t', 1));
     std::string xml_request = xml_stream.str();
     int message_size = xml_request.size();
     std::stringstream message_stream;
@@ -41,7 +41,7 @@ std::string createOpenTransaction(int account_id, const std::string& sym, int am
     order.put("<xmlattr>.amount", amount);
     order.put("<xmlattr>.limit", limit);
     std::stringstream xml_stream;
-    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>('\t', 1));
     std::string xml_request = xml_stream.str();
     int message_size = xml_request.size();
     std::stringstream message_stream;
@@ -56,7 +56,7 @@ std::string createQueryTransaction(int account_id, int trans_id) {
     pt::ptree& query = transactions.add("query", "");
     query.put("<xmlattr>.id", trans_id);
     std::stringstream xml_stream;
-    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>('\t', 1));
     std::string xml_request = xml_stream.str();
     int message_size = xml_request.size();
     std::stringstream message_stream;
@@ -71,7 +71,7 @@ std::string createCancelTransaction(int account_id, int trans_id) {
     pt::ptree& cancel = transactions.add("cancel", "");
     cancel.put("<xmlattr>.id", trans_id);
     std::stringstream xml_stream;
-    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>());
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>('\t', 1));
     std::string xml_request = xml_stream.str();
     int message_size = xml_request.size();
     std::stringstream message_stream;
