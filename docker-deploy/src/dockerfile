@@ -9,4 +9,5 @@ RUN apt-get -y install libpqxx-dev libboost-all-dev
 ADD . /var/log/erss
 WORKDIR /var/log/erss/
 
+RUN chmod u+r+x run.sh
 ENTRYPOINT ["./run.sh"]
