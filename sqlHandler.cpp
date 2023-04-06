@@ -200,7 +200,6 @@ int sqlHandler::doOrder(int account_id, string symbol, double amount, double lim
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(amount != 0) {
       double shares = c[2].as<double>();
-      cout << shares << amount <<endl;
       if(abs(shares) < abs(amount)) {
         if(!handleMatch(c, shares, -shares, transaction_id, symbol, account_id, limit)) continue;
         amount += shares;

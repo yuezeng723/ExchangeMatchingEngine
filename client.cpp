@@ -204,7 +204,8 @@ int main() {
 
 
     for (size_t i = 0; i < xml_requests.size(); ++i) {
-        std::cout << "Sending XML Request " << (i + 1) << ":\n" << xml_requests[i] << std::endl;
+        //std::cout << "Sending XML Request " << (i + 1) << ":\n" << xml_requests[i] << std::endl;
+        std::cout << "Sending " << (i + 1) << ":\n" << std::endl;
         communicateXML(xml_requests[i], server_ip, server_port);
     }
 
