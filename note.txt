@@ -48,3 +48,18 @@ string handleCreate(pt::ptree &root)
 //        8.3.2 if result is not empty, get the result and add an "executed" tag with attributes "shares" = amount, "price" = execute_price, "time" = time to the result xml string
 //9. return the result xml string
 string handleTransaction(pt::ptree &root)
+
+Core 4:
+Elapsed time: 0:17.18
+User CPU time: 1.96
+System CPU time: 1.13
+
+Core 2:
+Elapsed time: 0:15.20
+User CPU time: 1.90
+System CPU time: 1.14
+
+Core 1:
+Elapsed time: 1:26.67
+User CPU time: 1.70
+System CPU time: 1.07
