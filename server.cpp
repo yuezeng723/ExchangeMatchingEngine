@@ -132,6 +132,7 @@ string Server::handleCreate(sqlHandler * database, pt::ptree &root, string &resp
   BOOST_FOREACH(pt::ptree::value_type &v, root.get_child("create")) {
     if (v.first == "account") {
       int account_id = v.second.get<int>("<xmlattr>.id");
+      cout << "accountid: " << account_id << endl;
       double balance = v.second.get<double>("<xmlattr>.balance");
       if (!database->addAccount(account_id, balance)) { //database->checkAccountExist(account_id)
         pt::ptree &error = treeRoot.add("error", "Account already exists");
@@ -271,6 +272,7 @@ string Server::handleTransaction(sqlHandler * database, pt::ptree &root, string 
   pt::ptree tree;
   pt::ptree& treeRoot = tree.add("result", "");
   int account_id = root.get<int>("transactions.<xmlattr>.id");
+  cout << "accountid: " << account_id << endl;
   stringstream xmlOutput;
   BOOST_FOREACH(pt::ptree::value_type &v, root.get_child("transactions")) {
       cout << v.first << endl;
