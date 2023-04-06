@@ -138,14 +138,24 @@ void testOrderMatching_PartialMatch(std::vector<std::string>& xml_requests){
     xml_requests.push_back(createAccountPosition(5, "ALPHA", 50000, 500));//create account 5 with 50000 balance and 500 shares of ALPHA
     xml_requests.push_back(createAccountPosition(6, "BETA", 60000, 600));//create account 6 with 60000 balance and 600 shares of BETA
     xml_requests.push_back(createOrderTransaction(5, "ALPHA", -100, 7)); //account 5 sells 100 shares of ALPHA at 7
+    xml_requests.push_back(createQueryTransaction(5, 1));
+
     xml_requests.push_back(createOrderTransaction(6, "ALPHA", 50, 7)); //account 6 buys 50 shares of ALPHA at 7
+    xml_requests.push_back(createQueryTransaction(6, 2));
     //query the transaction
     xml_requests.push_back(createQueryTransaction(5, 1));
     xml_requests.push_back(createQueryTransaction(6, 2));
 }
 void testCancelOrder_FullCancel(std::vector<std::string>& xml_requests){
-    xml_requests.push_back(createOrderTransaction(1, "AAPL", -100, 7)); //account 1 sells 100 shares of AAPL at 7
-    xml_requests.push_back(createCancelTransaction(1, 1)); //account 1 cancels order 1
+    xml_requests.push_back(createAccountPosition(7, "TENCENT", 10000, 100));//create account 7 with 10000 balance and 100 shares of TENCENT
+    xml_requests.push_back(createAccountPosition(8, "FACEBOOK", 20000, 200));//create account 8 with 20000 balance and 200 shares of FACEBOOK
+    //cant match
+    xml_requests.push_back(createOrderTransaction(7, "TENCENT", -100, 7)); //account 7 sells 100 shares of TENCENT at 7
+    xml_requests.push_back(createOrderTransaction(8, "TENCENT", 100, 2)); //account 8 buys 100 shares of TENCENT at 2
+    //cancel order
+    xml_requests.push_back(createCancelTransaction(7, 1)); //account 7 cancels order 1
+    //query the transaction
+    xml_requests.push_back(createQueryTransaction(7, 1));
 }
 
 void testCancelOrder_PartialCancel(std::vector<std::string>& xml_requests){
