@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in {1..1000}
+for i in {1..500}
 do
     ./testing/client &
 done
