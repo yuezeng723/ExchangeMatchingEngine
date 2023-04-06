@@ -13,7 +13,7 @@
 namespace pt = boost::property_tree;
 //create a mutex lock for xml file
 std::mutex xml_lock;
-
+std::mutex terminal_lock;
 std::string createAccountPosition(int account_id, const std::string& sym, int balance, double shares) {
     pt::ptree tree;
     pt::ptree& create = tree.add("create", "");
@@ -179,8 +179,11 @@ int main() {
 
 
     for (size_t i = 0; i < xml_requests.size(); ++i) {
-        //std::cout << "Sending XML Request " << (i + 1) << ":\n" << xml_requests[i] << std::endl;
-        std::cout << "Sending " << (i + 1) << ":\n" << std::endl;
+        //lock terminal output
+        {
+            std::lock_guard<std::mutex> lock(terminal_lock);
+            std::cout << "Sending " << (i + 1) << ":\n" << std::endl;
+        }
         communicateXML(xml_requests[i], server_ip, server_port);
     }
 
