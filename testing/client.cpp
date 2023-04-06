@@ -174,7 +174,7 @@ int main() {
     std::vector<std::string> xml_requests;
     testOrderMatching_FullMatch(xml_requests);
 
-    std::string server_ip = "127.0.0.1";
+    std::string server_ip = "localhost";//"vcm-32232.vm.duke.edu";
     int server_port = 12345;
 
 
