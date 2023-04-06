@@ -225,7 +225,7 @@ void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_t
       status_exec.put("<xmlattr>.time", order["time"].as<string>());
     }
   }
-  else {
+  if (openedOrders.empty() && executedOrders.empty() && canceledOrders.empty()) {
     pt::ptree &error = treeRoot.add("error", "No such transaction");
     error.put("<xmlattr>.id", transaction_id);
   }
