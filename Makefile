@@ -1,13 +1,13 @@
 CC=g++
 CFLAGS=-O3
 EXTRAFLAGS=-lpqxx -lpq -pthread -lboost_system
-TARGETS=client server
+TARGETS=testing/client server
 
 all: $(TARGETS)
 clean:
 	rm -f $(TARGETS) *~
 	
-client: client.cpp
+testing/client: testing/client.cpp
 	g++ -g -o $@ $<
 
 server: main.cpp server.cpp server.hpp sqlHandler.cpp sqlHandler.hpp threadPool.hpp
