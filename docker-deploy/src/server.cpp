@@ -57,7 +57,7 @@ void Server::createTables() {
 
 void Server::initialDatabase() {
   try{
-    C = new connection("dbname=exchange_matching user=postgres password=ece568");
+    C = new connection("dbname=exchange_matching user=postgres password=ece568 host=db port=5432");
     C->is_open();
   } catch (const std::exception &e){
     cerr << e.what() << std::endl;
@@ -76,7 +76,7 @@ void Server::initialDatabase() {
 }
 
 void Server::handleClient(int client_fd) {
-    connection * C1 = new connection("dbname=exchange_matching user=postgres password=ece568");
+    connection * C1 = new connection("dbname=exchange_matching user=postgres password=ece568 host=db port=5432");
     sqlHandler * database = new sqlHandler(C1);
     char buffer[4000];
     int bytesReceived;

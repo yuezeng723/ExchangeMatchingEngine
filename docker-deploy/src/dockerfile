@@ -1,6 +1,11 @@
 FROM ubuntu
+ENV TZ=US/New_York \
+    DEBIAN_FRONTEND=noninteractive
+
 RUN mkdir /var/log/erss
 RUN apt-get update && apt-get -y install g++ make
+RUN apt-get install -y postgresql postgresql-contrib 
+RUN apt-get -y install libpqxx-dev libboost-all-dev
 ADD . /var/log/erss
 WORKDIR /var/log/erss/
 

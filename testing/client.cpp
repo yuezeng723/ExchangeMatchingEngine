@@ -83,21 +83,9 @@ std::string createCancelTransaction(int account_id, int trans_id) {
     return message_stream.str();
 }
 
-void communicateXML(const std::string& xml_request, const std::string& server_ip, int server_port) {
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        perror("socket");
-        return;
-    }
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(server_port);
-    inet_pton(AF_INET, server_ip.c_str(), &server_addr.sin_addr);
-    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("connect");
-        close(sockfd);
-        return;
-    }
+void communicateXML(const std::string& xml_request, int sockfd) {
+
+
     send(sockfd, xml_request.c_str(), xml_request.size(), 0);
 
     //open an xml file to store the response
@@ -115,7 +103,6 @@ void communicateXML(const std::string& xml_request, const std::string& server_ip
             perror("recv");
         }
     }
-    close(sockfd);
 }
 void testCreateAccount(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createAccountPosition(3, "GOOGLE", 30000, 300));//create account 3 with 30000 balance and 300 shares of AAPL
@@ -174,8 +161,43 @@ int main() {
     std::vector<std::string> xml_requests;
     testOrderMatching_FullMatch(xml_requests);
 
-    std::string server_ip = "localhost";//"vcm-32232.vm.duke.edu";
-    int server_port = 12345;
+    const char* hostname = "localhost";//"vcm-32232.vm.duke.edu";
+    const char* port = "12345";
+
+    int sockfd;
+    struct addrinfo hints, *host_info_list, *p;
+    char buffer[1024] = {0};
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC; // use IPv4 or IPv6, whichever is available
+    hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
+
+    if (getaddrinfo(hostname, port, &hints, &host_info_list) != 0) {
+        std::cerr << "getaddrinfo failed" << std::endl;
+        return -1;
+    }
+   // loop through all the results and connect to the first one we can
+    for (p = host_info_list; p != NULL; p = p->ai_next) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sockfd < 0) {
+            continue;
+        }
+        if (connect(sockfd, p->ai_addr, p->ai_addrlen) < 0) {
+            close(sockfd);
+            continue;
+        }
+        break;
+    }
+
+    if (p == NULL) {
+        std::cerr << "Failed to connect" << std::endl;
+        return -1;
+    }
+
+    freeaddrinfo(host_info_list);
+
+    // std::string server_ip = "127.0.0.1";//"vcm-32232.vm.duke.edu";
+    // int server_port = 12345;
 
 
     for (size_t i = 0; i < xml_requests.size(); ++i) {
@@ -184,8 +206,9 @@ int main() {
             std::lock_guard<std::mutex> lock(terminal_lock);
             std::cout << "Sending " << (i + 1) << ":\n" << std::endl;
         }
-        communicateXML(xml_requests[i], server_ip, server_port);
+        communicateXML(xml_requests[i], sockfd);
     }
 
+    close(sockfd);
     return 0;
 }
