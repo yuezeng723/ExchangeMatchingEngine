@@ -10,6 +10,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <mutex>
+#include <thread>
 namespace pt = boost::property_tree;
 //create a mutex lock for xml file
 std::mutex xml_lock;
@@ -118,9 +119,6 @@ void testOrderMatching_FullMatch(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createOrderTransaction(2, "AAPL", 100, 7)); //account 2 buys 100 shares of AAPL at 7
 
     xml_requests.push_back(createQueryTransaction(2, 2));
-    //the order should be matched
-    // xml_requests.push_back(createQueryTransaction(2, 1));
-    // xml_requests.push_back(createQueryTransaction(1, 2));
 
     xml_requests.push_back(createQueryTransaction(1, 1));
     xml_requests.push_back(createQueryTransaction(2, 2));
@@ -153,13 +151,68 @@ void testCancelOrder_FullCancel(std::vector<std::string>& xml_requests){
 }
 
 void testCancelOrder_PartialCancel(std::vector<std::string>& xml_requests){
-    xml_requests.push_back(createOrderTransaction(1, "AAPL", -100, 7)); //account 1 sells 100 shares of AAPL at 7
-    xml_requests.push_back(createOrderTransaction(2, "AAPL", 50, 7)); //account 2 buys 50 shares of AAPL at 7
-    xml_requests.push_back(createCancelTransaction(1, 1)); //account 1 cancels order 1
+    //create account
+    xml_requests.push_back(createAccountPosition(9, "AAPL", 10000, 100));//create account 9 with 10000 balance and 100 shares of AAPL
+    xml_requests.push_back(createAccountPosition(10, "TSL", 20000, 200));//create account 10 with 20000 balance and 200 shares of TSL
+    //order matching
+    xml_requests.push_back(createOrderTransaction(9, "AAPL", -100, 7)); //account 1 sells 100 shares of AAPL at 7
+    xml_requests.push_back(createOrderTransaction(10, "AAPL", 50, 7)); //account 2 buys 50 shares of AAPL at 7
+    //cancel order
+    xml_requests.push_back(createCancelTransaction(9, 1)); //account 9 cancels order 1
 }
-int main() {
+void testError_InvalidAccount_orderTransaction (std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createOrderTransaction(1000, "AAPL", -100, 7)); //account 1000 does not exist
+}
+
+void testError_InvalidAccount_queryTransaction (std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createQueryTransaction(1000, 1)); //account 1000 does not exist
+}
+
+void testError_InvalidAccount_cancelTransaction (std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createCancelTransaction(1000, 1)); //account 1000 does not exist
+}
+
+void testError_AccountDoubleCreate(std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createAccountPosition(2000, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
+    xml_requests.push_back(createAccountPosition(2001, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
+    xml_requests.push_back(createOrderTransaction(2000, "AAPL", -100, 7)); //account 1 sells 100 shares of AAPL at 7
+    xml_requests.push_back(createQueryTransaction(2001, 1));
+}
+
+void testError_InvalidTransaction_TransactionNotExist(std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createQueryTransaction(1, 200000)); //account 1 does not have transaction 1
+}
+
+void testError_InvalidTransaction_CancelTransaction(std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createCancelTransaction(1, 200000)); //account 1 does not have transaction 1
+}
+
+void testError_InvalidQuery_TransactionNotExist(std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createQueryTransaction(1, 200000)); //account 1 does not have transaction 1
+}
+
+void testError_InvalidQuery_AccountNotExist(std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createQueryTransaction(4000, 1)); //account 1000 does not exist
+}
+
+void testError_InvalidQuery_NoPermissionAccount(std::vector<std::string>& xml_requests){
+    xml_requests.push_back(createAccountPosition(50, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
+    xml_requests.push_back(createAccountPosition(51, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
+    xml_requests.push_back(createQueryTransaction(2, 1)); //account 2 does not have permission to query account 1
+}
+void handelClient() {
     std::vector<std::string> xml_requests;
     testOrderMatching_FullMatch(xml_requests);
+    testOrderMatching_PartialMatch(xml_requests);
+    testCancelOrder_FullCancel(xml_requests);
+    testCancelOrder_PartialCancel(xml_requests);
+    testError_InvalidAccount_orderTransaction(xml_requests);
+    testError_InvalidAccount_queryTransaction(xml_requests);
+    testError_InvalidAccount_cancelTransaction(xml_requests);
+    testError_AccountDoubleCreate(xml_requests);
+    testError_InvalidTransaction_CancelTransaction(xml_requests);
+    testError_InvalidTransaction_TransactionNotExist(xml_requests);
+    testError_InvalidQuery_AccountNotExist(xml_requests);
 
     const char* hostname = "localhost";//"vcm-32232.vm.duke.edu";
     const char* port = "12345";
@@ -174,7 +227,7 @@ int main() {
 
     if (getaddrinfo(hostname, port, &hints, &host_info_list) != 0) {
         std::cerr << "getaddrinfo failed" << std::endl;
-        return -1;
+        return;
     }
    // loop through all the results and connect to the first one we can
     for (p = host_info_list; p != NULL; p = p->ai_next) {
@@ -191,14 +244,13 @@ int main() {
 
     if (p == NULL) {
         std::cerr << "Failed to connect" << std::endl;
-        return -1;
+        return;
     }
 
     freeaddrinfo(host_info_list);
 
     // std::string server_ip = "127.0.0.1";//"vcm-32232.vm.duke.edu";
     // int server_port = 12345;
-
 
     for (size_t i = 0; i < xml_requests.size(); ++i) {
         //lock terminal output
@@ -208,7 +260,17 @@ int main() {
         }
         communicateXML(xml_requests[i], sockfd);
     }
-
     close(sockfd);
+}
+int main() {
+    std::vector<std::thread> threads;
+    int num_threads = 1;//change this number 
+
+    for (int i = 0; i < num_threads; ++i) {
+        threads.push_back(std::thread(handelClient));
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
     return 0;
 }
