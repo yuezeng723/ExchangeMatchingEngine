@@ -14,10 +14,9 @@ Test connect 1000 clients
 *******************  ONE CORE ************************************
     Server core: 0
     Client execution performance:
-        Elapsed time: 4:06.69
-        User CPU time: 2.02
-        System CPU time: 0.63
-        ####Killed because it paused
+        Elapsed time: 0:13.83
+        User CPU time: 2.13
+        System CPU time: 0.71
 
     command:
         Server side:
@@ -28,9 +27,9 @@ Test connect 1000 clients
 *******************  TWO CORES ***********************************
     Server core: 0, 1
     Client execution performance:
-        Elapsed time: 1:51.95
-        User CPU time: 2.11
-        System CPU time: 0.68
+        Elapsed time: 0:13.69
+        User CPU time: 2.14
+        System CPU time: 0.71
     command:
         Server side:
         sudo cgexec -g cpu:/my_cgroup_01 ./server
@@ -55,9 +54,9 @@ Test connect 500 clients
 *******************  ONE CORE ************************************
     Server core: 0
     Client execution performance:
-        Elapsed time: 0:09.98
-        User CPU time: 1.01
-        System CPU time: 0.35
+        Elapsed time: 0:06.91
+        User CPU time: 1.08
+        System CPU time: 0.29
     command:
         Server side:
         sudo cgexec -g cpu:/my_cgroup_0 ./server
@@ -67,9 +66,9 @@ Test connect 500 clients
 *******************  TWO CORES ***********************************
     Server core: 0, 1
     Client execution performance:
-        Elapsed time: 0:17.71
-        User CPU time: 1.03
-        System CPU time: 0.29
+        Elapsed time: 0:06.99
+        User CPU time: 1.01
+        System CPU time: 0.36
     command:
         Server side:
         sudo cgexec -g cpu:/my_cgroup_01 ./server
@@ -79,10 +78,9 @@ Test connect 500 clients
 *******************  FOUR CORES **********************************
     Server core: 0, 1, 2, 3
     Client execution performance:
-        Elapsed time: 5:30.30
-        User CPU time: 0.10
-        System CPU time: 0.09
-        ####Killed because it paused
+        Elapsed time: 0:06.92
+        User CPU time: 1.04
+        System CPU time: 0.36
     command:
         Server side:
         sudo cgexec -g cpu:/my_cgroup_0123 ./server
@@ -129,3 +127,22 @@ Test connect 100 clients
         sudo cgexec -g cpu:/my_cgroup_0123 ./server
         Client side:
         /usr/bin/time -f "Elapsed time: %E\nUser CPU time: %U\nSystem CPU time: %S" ./testing/run.sh
+
+
+
+**************  Run 10 clients **********
+4 core:
+    Elapsed time: 0:01.47
+    User CPU time: 0.03
+    System CPU time: 0.03
+2 core:
+    Elapsed time: 0:01.41
+    User CPU time: 0.04
+    System CPU time: 0.03
+1 core:
+    Elapsed time: 0:01.38
+    User CPU time: 0.02
+    System CPU time: 0.04
+
+
+

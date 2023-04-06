@@ -8,7 +8,7 @@ clean:
 	rm -f $(TARGETS) *~
 	
 testing/client: testing/client.cpp
-	g++ -g -o $@ $<
+	g++ -g -o $@ $< -pthread
 
 server: main.cpp server.cpp server.hpp sqlHandler.cpp sqlHandler.hpp threadPool.hpp
 	$(CC) $(CFLAG) -o $@ $^ $(EXTRAFLAGS)
