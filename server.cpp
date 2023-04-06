@@ -284,7 +284,6 @@ string Server::handleTransaction(sqlHandler * database, pt::ptree &root, string 
         responseAccountNotExist(treeRoot, account_id);
       } else {
         responseQueryTransaction(database, v, treeRoot, account_id);
-        responseQueryTransaction(database, v, treeRoot, account_id);
       }
     }
     else if (v.first == "cancel") {
