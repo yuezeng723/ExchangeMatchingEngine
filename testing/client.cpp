@@ -15,7 +15,7 @@ namespace pt = boost::property_tree;
 //create a mutex lock for xml file
 std::mutex xml_lock;
 std::mutex terminal_lock;
-std::string createAccountPosition(int account_id, const std::string& sym, int balance, double shares) {
+std::string createAccountPosition(int account_id, const std::string& sym, double balance, double shares) {
     pt::ptree tree;
     pt::ptree& create = tree.add("create", "");
     pt::ptree& account = create.add("account", "");
@@ -36,7 +36,7 @@ std::string createAccountPosition(int account_id, const std::string& sym, int ba
     message_stream << message_size << std::endl << xml_request;
     return message_stream.str();
 }
-std::string createOrderTransaction(int account_id, const std::string& sym, int amount, int limit) {
+std::string createOrderTransaction(int account_id, const std::string& sym, double amount, double limit) {
     pt::ptree tree;
     pt::ptree& transactions = tree.add("transactions", "");
     transactions.put("<xmlattr>.id", account_id);
@@ -53,7 +53,7 @@ std::string createOrderTransaction(int account_id, const std::string& sym, int a
     message_stream << message_size << std::endl << xml_request;
     return message_stream.str();
 }
-std::string createMultiOrderTransaction(int account_id, const std::string& sym, int amount, int limit) {
+std::string createMultiOrderTransaction(int account_id, const std::string& sym, double amount, double limit) {
     pt::ptree tree;
     pt::ptree& transactions = tree.add("transactions", "");
     transactions.put("<xmlattr>.id", account_id);
@@ -80,7 +80,7 @@ std::string createMultiOrderTransaction(int account_id, const std::string& sym, 
     message_stream << message_size << std::endl << xml_request;
     return message_stream.str();
 }
-std::string createMultiOrderCancelQueryTransaction(int account_id, const std::string& sym, int amount, int limit, int trans_id) {
+std::string createMultiOrderCancelQueryTransaction(int account_id, const std::string& sym, double amount, double limit, int trans_id) {
     pt::ptree tree;
     pt::ptree& transactions = tree.add("transactions", "");
     transactions.put("<xmlattr>.id", account_id);
@@ -168,15 +168,15 @@ void communicateXML(const std::string& xml_request, int sockfd) {
     }
 }
 void testCreateAccount(std::vector<std::string>& xml_requests) {
-    xml_requests.push_back(createAccountPosition(3, "GOOGLE", 30000, 300));//create account 3 with 30000 balance and 300 shares of AAPL
-    xml_requests.push_back(createAccountPosition(4, "META", 40000, 400));//create account 4 with 40000 balance and 400 shares of TSL
+    xml_requests.push_back(createAccountPosition(3, "GOOGLE", 30000.3, 300));//create account 3 with 30000 balance and 300 shares of AAPL
+    xml_requests.push_back(createAccountPosition(4, "META", 40000.5, 400));//create account 4 with 40000 balance and 400 shares of TSL
 }
 void testAllRequestType(std::vector<std::string>& xml_requests) {
 
     xml_requests.push_back(createAccountPosition(1, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
     xml_requests.push_back(createAccountPosition(2, "TSL", 20000, 200));//create account 2 with 20000 balance and 200 shares of TSL
     xml_requests.push_back(createMultiOrderCancelQueryTransaction(1, "AAPL", -100.1, 7.4, 2)); //account 1 sells 100 shares of AAPL at 7
-    xml_requests.push_back(createMultiOrderCancelQueryTransaction(2, "AAPL", 100, 7, 4)); //account 1 sells 100 shares of AAPL at 7
+    xml_requests.push_back(createMultiOrderCancelQueryTransaction(2, "AAPL", 100, 7.6, 4)); //account 1 sells 100 shares of AAPL at 7
     xml_requests.push_back(createQueryTransaction(1, 1));
 
     xml_requests.push_back(createQueryTransaction(1, 2));
@@ -297,9 +297,10 @@ void testError_InvalidQuery_NoPermissionAccount(std::vector<std::string>& xml_re
 }
 void handelClient() {
     std::vector<std::string> xml_requests;
+    //choose one or multiple test below
     // testOrderMatching_FullMatch(xml_requests);
     // testOrderMatching_PartialMatch(xml_requests);
-    // testOrderMatching_multiOrder(xml_requests);
+    testOrderMatching_multiOrder(xml_requests);
     testAllRequestType(xml_requests);
     // testCancelOrder_FullCancel(xml_requests);
     // testCancelOrder_PartialCancel(xml_requests);

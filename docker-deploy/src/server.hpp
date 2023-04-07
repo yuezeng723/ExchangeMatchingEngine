@@ -76,6 +76,7 @@ public:
     void parseBuffer(sqlHandler * database, char* buffer, int size, string &response);
     string handleCreate(sqlHandler * database, pt::ptree &root, string &result);
     string handleTransaction(sqlHandler * database, pt::ptree &root, string &result);
+    string setFractionNum(double val);
     //write xml response
     void responseAccountNotExist(pt::ptree &treeRoot, int account_id);
     void responseOrderTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id);

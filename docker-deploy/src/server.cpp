@@ -179,21 +179,21 @@ void Server::responseOrderTransaction(sqlHandler * database, pt::ptree::value_ty
   if (amount >= 0 && !database->checkValidBuyOrder(account_id, amount, limit_price)) {
     pt::ptree &error = treeRoot.add("error", "Insufficient balance");
     error.put("<xmlattr>.sym", symbol);
-    error.put("<xmlattr>.amount", amount);
-    error.put("<xmlattr>.limit", limit_price);
+    error.put("<xmlattr>.amount", setFractionNum(amount));
+    error.put("<xmlattr>.limit", setFractionNum(limit_price));
   }
   else if (amount < 0 && !database->checkValidSellOrder(account_id, symbol, amount)) {
     pt::ptree &error = treeRoot.add("error", "Insufficient shares");
     error.put("<xmlattr>.sym", symbol);
-    error.put("<xmlattr>.amount", amount);
-    error.put("<xmlattr>.limit", limit_price);
+    error.put("<xmlattr>.amount", setFractionNum(amount));
+    error.put("<xmlattr>.limit", setFractionNum(limit_price));
   }
   else {
     int transaction_id = database->doOrder(account_id, symbol, amount, limit_price);
     pt::ptree &opened = treeRoot.add("opened", "");
     opened.put("<xmlattr>.sym", symbol);
-    opened.put("<xmlattr>.amount", amount);
-    opened.put("<xmlattr>.limit", limit_price);
+    opened.put("<xmlattr>.amount", setFractionNum(amount));
+    opened.put("<xmlattr>.limit", setFractionNum(limit_price));
     opened.put("<xmlattr>.id", transaction_id);
   }
 }
@@ -212,21 +212,24 @@ void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_t
     if (!openedOrders.empty()) {
       for (const auto &order : openedOrders) {
         pt::ptree &status_open = status.add("open", "");
-        status_open.put("<xmlattr>.shares", order["shares"].as<double>());
+        status_open.put("<xmlattr>.shares", setFractionNum(order["shares"].as<double>()));
       }
     }
     if (!canceledOrders.empty()) {
       for (const auto &order : canceledOrders) {
         pt::ptree &status_cancel = status.add("canceled", "");
-        status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
+        std::stringstream ss;
+        status_cancel.put("<xmlattr>.shares", setFractionNum(order["shares"].as<double>()));
         status_cancel.put("<xmlattr>.time", order["time"].as<string>());
       }
     }
     if (!executedOrders.empty()) {
       for (const auto &order : executedOrders) {
         pt::ptree &status_exec = status.add("executed", "");
-        status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
-        status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << order["shares"].as<double>();
+        status_exec.put("<xmlattr>.shares", setFractionNum(order["shares"].as<double>()));
+        status_exec.put("<xmlattr>.price", setFractionNum(order["execute_price"].as<double>()));
         status_exec.put("<xmlattr>.time", order["time"].as<string>());
       }
     }
@@ -236,7 +239,12 @@ void Server:: responseQueryTransaction(sqlHandler * database, pt::ptree::value_t
     }
   }
 }
-
+string Server::setFractionNum(double val) {
+  
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(2) << val;
+  return ss.str();
+}
 void Server::responseCancelTransaction(sqlHandler * database, pt::ptree::value_type &v, pt::ptree &treeRoot, int account_id){
   int transaction_id = v.second.get<int>("<xmlattr>.id");
   if (account_id != database->getAccount(transaction_id)) {
@@ -253,14 +261,14 @@ void Server::responseCancelTransaction(sqlHandler * database, pt::ptree::value_t
       result canceledOrders = database->doQueryCancel(transaction_id);
       for (const auto &order : canceledOrders) {
         pt::ptree &status_cancel = canceled.add("canceled", "");
-        status_cancel.put("<xmlattr>.shares", order["shares"].as<double>());
+        status_cancel.put("<xmlattr>.shares", setFractionNum(order["shares"].as<double>()));
         status_cancel.put("<xmlattr>.time", order["time"].as<string>());
       }
       result executedOrders = database->doQueryExecute(transaction_id);
       for (const auto &order : executedOrders) {
         pt::ptree &status_exec = canceled.add("executed", "");
-        status_exec.put("<xmlattr>.shares", order["shares"].as<double>());
-        status_exec.put("<xmlattr>.price", order["execute_price"].as<double>());
+        status_exec.put("<xmlattr>.shares", setFractionNum(order["shares"].as<double>()));
+        status_exec.put("<xmlattr>.price", setFractionNum(order["execute_price"].as<double>()));
         status_exec.put("<xmlattr>.time", order["time"].as<string>());
       }
     }
