@@ -279,8 +279,8 @@ bool sqlHandler::doCancel(int transaction_id, int account_id) { //cancel shares 
   if(R.empty()) return false;
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(!deleteOpenOrder(c[0].as<int>(), c[4].as<int>())) return false;
-    updateAccount(account_id, c[1].as<int>()*c[2].as<double>());
-    addCancelOrder(transaction_id, c[1].as<int>(), std::time(nullptr));
+    updateAccount(account_id, c[1].as<double>()*c[2].as<double>());
+    addCancelOrder(transaction_id, c[1].as<double>(), std::time(nullptr));
   }
   return true;
 }

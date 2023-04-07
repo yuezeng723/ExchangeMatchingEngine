@@ -53,7 +53,69 @@ std::string createOrderTransaction(int account_id, const std::string& sym, int a
     message_stream << message_size << std::endl << xml_request;
     return message_stream.str();
 }
+std::string createMultiOrderTransaction(int account_id, const std::string& sym, int amount, int limit) {
+    pt::ptree tree;
+    pt::ptree& transactions = tree.add("transactions", "");
+    transactions.put("<xmlattr>.id", account_id);
+    pt::ptree& order = transactions.add("order", "");
+    order.put("<xmlattr>.sym", sym);
+    order.put("<xmlattr>.amount", amount);
+    order.put("<xmlattr>.limit", limit);
+    
+    pt::ptree& order1 = transactions.add("order", "");
+    order1.put("<xmlattr>.sym", sym);
+    order1.put("<xmlattr>.amount", amount*2);
+    order1.put("<xmlattr>.limit", limit-3);
 
+    pt::ptree& order2 = transactions.add("order", "");
+    order2.put("<xmlattr>.sym", sym);
+    order2.put("<xmlattr>.amount", amount);
+    order2.put("<xmlattr>.limit", limit+10);
+
+    std::stringstream xml_stream;
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>('\t', 1));
+    std::string xml_request = xml_stream.str();
+    int message_size = xml_request.size();
+    std::stringstream message_stream;
+    message_stream << message_size << std::endl << xml_request;
+    return message_stream.str();
+}
+std::string createMultiOrderCancelQueryTransaction(int account_id, const std::string& sym, int amount, int limit, int trans_id) {
+    pt::ptree tree;
+    pt::ptree& transactions = tree.add("transactions", "");
+    transactions.put("<xmlattr>.id", account_id);
+    pt::ptree& order = transactions.add("order", "");
+    order.put("<xmlattr>.sym", sym);
+    order.put("<xmlattr>.amount", amount);
+    order.put("<xmlattr>.limit", limit);
+
+    pt::ptree& cancel = transactions.add("cancel", "");
+    cancel.put("<xmlattr>.id", trans_id - 1);
+
+    pt::ptree& order1 = transactions.add("order", "");
+    order1.put("<xmlattr>.sym", sym);
+    order1.put("<xmlattr>.amount", amount*2);
+    order1.put("<xmlattr>.limit", limit-3);
+
+    pt::ptree& query = transactions.add("query", "");
+    query.put("<xmlattr>.id", trans_id);
+
+    pt::ptree& order2 = transactions.add("order", "");
+    order2.put("<xmlattr>.sym", sym);
+    order2.put("<xmlattr>.amount", amount);
+    order2.put("<xmlattr>.limit", limit+10);
+    
+    pt::ptree& cancel1 = transactions.add("cancel", "");
+    cancel1.put("<xmlattr>.id", trans_id);
+
+    std::stringstream xml_stream;
+    pt::write_xml(xml_stream, tree, pt::xml_writer_make_settings<std::string>('\t', 1));
+    std::string xml_request = xml_stream.str();
+    int message_size = xml_request.size();
+    std::stringstream message_stream;
+    message_stream << message_size << std::endl << xml_request;
+    return message_stream.str();
+}
 std::string createQueryTransaction(int account_id, int trans_id) {
     pt::ptree tree;
     pt::ptree& transactions = tree.add("transactions", "");
@@ -109,7 +171,22 @@ void testCreateAccount(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createAccountPosition(3, "GOOGLE", 30000, 300));//create account 3 with 30000 balance and 300 shares of AAPL
     xml_requests.push_back(createAccountPosition(4, "META", 40000, 400));//create account 4 with 40000 balance and 400 shares of TSL
 }
+void testAllRequestType(std::vector<std::string>& xml_requests) {
 
+    xml_requests.push_back(createAccountPosition(1, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
+    xml_requests.push_back(createAccountPosition(2, "TSL", 20000, 200));//create account 2 with 20000 balance and 200 shares of TSL
+    xml_requests.push_back(createMultiOrderCancelQueryTransaction(1, "AAPL", -100, 7, 2)); //account 1 sells 100 shares of AAPL at 7
+    xml_requests.push_back(createMultiOrderCancelQueryTransaction(2, "AAPL", 100, 7, 4)); //account 1 sells 100 shares of AAPL at 7
+    xml_requests.push_back(createQueryTransaction(1, 1));
+
+    xml_requests.push_back(createQueryTransaction(1, 2));
+
+    xml_requests.push_back(createQueryTransaction(1, 3));
+    xml_requests.push_back(createQueryTransaction(2, 4));
+    xml_requests.push_back(createQueryTransaction(2, 5));
+    xml_requests.push_back(createQueryTransaction(2, 6));
+
+}
 void testOrderMatching_FullMatch(std::vector<std::string>& xml_requests) {
     xml_requests.push_back(createAccountPosition(1, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
     xml_requests.push_back(createAccountPosition(2, "TSL", 20000, 200));//create account 2 with 20000 balance and 200 shares of TSL
@@ -120,8 +197,26 @@ void testOrderMatching_FullMatch(std::vector<std::string>& xml_requests) {
 
     xml_requests.push_back(createQueryTransaction(2, 2));
 
+    xml_requests.push_back(createQueryTransaction(1, 2));
+    xml_requests.push_back(createQueryTransaction(2, 1));
+
+}
+//Multiple order request in one transaction, transaction will alternately execute
+void testOrderMatching_multiOrder(std::vector<std::string>& xml_requests) {
+    xml_requests.push_back(createAccountPosition(1, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
+    xml_requests.push_back(createAccountPosition(2, "TSL", 20000, 200));//create account 2 with 20000 balance and 200 shares of TSL
+    xml_requests.push_back(createMultiOrderTransaction(1, "AAPL", -100, 7)); //account 1 sells 100 shares of AAPL at 7
     xml_requests.push_back(createQueryTransaction(1, 1));
-    xml_requests.push_back(createQueryTransaction(2, 2));
+
+    xml_requests.push_back(createMultiOrderTransaction(2, "AAPL", 100, 7)); //account 2 buys 100 shares of AAPL at 7
+
+    xml_requests.push_back(createQueryTransaction(2, 4));
+
+    xml_requests.push_back(createQueryTransaction(1, 2));
+    xml_requests.push_back(createQueryTransaction(2, 5));
+    
+    xml_requests.push_back(createQueryTransaction(1, 3));
+    xml_requests.push_back(createQueryTransaction(2, 6));
 
 }
 
@@ -202,17 +297,19 @@ void testError_InvalidQuery_NoPermissionAccount(std::vector<std::string>& xml_re
 }
 void handelClient() {
     std::vector<std::string> xml_requests;
-    testOrderMatching_FullMatch(xml_requests);
-    testOrderMatching_PartialMatch(xml_requests);
-    testCancelOrder_FullCancel(xml_requests);
-    testCancelOrder_PartialCancel(xml_requests);
-    testError_InvalidAccount_orderTransaction(xml_requests);
-    testError_InvalidAccount_queryTransaction(xml_requests);
-    testError_InvalidAccount_cancelTransaction(xml_requests);
-    testError_AccountDoubleCreate(xml_requests);
-    testError_InvalidTransaction_CancelTransaction(xml_requests);
-    testError_InvalidTransaction_TransactionNotExist(xml_requests);
-    testError_InvalidQuery_AccountNotExist(xml_requests);
+    // testOrderMatching_FullMatch(xml_requests);
+    // testOrderMatching_PartialMatch(xml_requests);
+    // testOrderMatching_multiOrder(xml_requests);
+    testAllRequestType(xml_requests);
+    // testCancelOrder_FullCancel(xml_requests);
+    // testCancelOrder_PartialCancel(xml_requests);
+    // testError_InvalidAccount_orderTransaction(xml_requests);
+    // testError_InvalidAccount_queryTransaction(xml_requests);
+    // testError_InvalidAccount_cancelTransaction(xml_requests);
+    // testError_AccountDoubleCreate(xml_requests);
+    // testError_InvalidTransaction_CancelTransaction(xml_requests);
+    // testError_InvalidTransaction_TransactionNotExist(xml_requests);
+    // testError_InvalidQuery_AccountNotExist(xml_requests);
 
     const char* hostname = "localhost";//"vcm-32232.vm.duke.edu";
     const char* port = "12345";
@@ -248,9 +345,6 @@ void handelClient() {
     }
 
     freeaddrinfo(host_info_list);
-
-    // std::string server_ip = "127.0.0.1";//"vcm-32232.vm.duke.edu";
-    // int server_port = 12345;
 
     for (size_t i = 0; i < xml_requests.size(); ++i) {
         //lock terminal output
