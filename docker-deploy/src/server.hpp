@@ -54,7 +54,7 @@ public:
         }
         initialDatabase();
         createTables();
-        pool = new ThreadPool(50);
+        pool = new ThreadPool(10);
     }
     ~Server() {
         close(server_fd);

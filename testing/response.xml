@@ -12,3 +12,83 @@
 	<created sym="TSL" id="2"/>
 </result>
 
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="-100" limit="7" id="1"/>
+	<canceled id="1">
+		<canceled shares="-100" time="1680834081"/>
+	</canceled>
+	<opened sym="AAPL" amount="-200" limit="4" id="2"/>
+	<status id="2">
+		<open shares="-200"/>
+	</status>
+	<opened sym="AAPL" amount="-100" limit="17" id="3"/>
+	<canceled id="2">
+		<canceled shares="-200" time="1680834081"/>
+	</canceled>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<opened sym="AAPL" amount="100" limit="7" id="4"/>
+	<error id="3">Invalid transaction id</error>
+	<opened sym="AAPL" amount="200" limit="4" id="5"/>
+	<status id="4">
+		<open shares="100"/>
+	</status>
+	<opened sym="AAPL" amount="100" limit="17" id="6"/>
+	<canceled id="4">
+		<canceled shares="100" time="1680834081"/>
+	</canceled>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="1">
+		<canceled shares="-100" time="1680834081"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="2">
+		<canceled shares="-200" time="1680834081"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="3">
+		<executed shares="-100" price="17" time="1680834081"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="4">
+		<canceled shares="100" time="1680834081"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="5">
+		<open shares="200"/>
+	</status>
+</result>
+
+-----------Server response-----------
+<?xml version="1.0" encoding="utf-8"?>
+<result>
+	<status id="6">
+		<executed shares="100" price="17" time="1680834081"/>
+	</status>
+</result>
+

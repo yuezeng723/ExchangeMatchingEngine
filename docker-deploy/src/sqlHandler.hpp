@@ -28,8 +28,8 @@ public:
     void addPosition(string symbol, int account_id, double shares);
     void updatePosition(string symbol, int account_id, double shares);
     void addOpenOrder(int transaction_id, double shares, double limit_price, string symbol);
-    void addExecuteOrder(int transaction_id, double shares, std::time_t time, double execute_price, double limit);
-    void addCancelOrder(int transaction_id, double shares, std::time_t time);
+    void addExecuteOrder(int transaction_id, double shares, string time, double execute_price, double limit);
+    void addCancelOrder(int transaction_id, double shares, string time);
     bool deleteOpenOrder(int open_id, int version);
     bool updateOpenOrder(int open_id, double shares, int version);
     bool checkAccountExist(int account_id);

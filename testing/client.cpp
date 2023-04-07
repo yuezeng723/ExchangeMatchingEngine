@@ -175,7 +175,7 @@ void testAllRequestType(std::vector<std::string>& xml_requests) {
 
     xml_requests.push_back(createAccountPosition(1, "AAPL", 10000, 100));//create account 1 with 10000 balance and 100 shares of AAPL
     xml_requests.push_back(createAccountPosition(2, "TSL", 20000, 200));//create account 2 with 20000 balance and 200 shares of TSL
-    xml_requests.push_back(createMultiOrderCancelQueryTransaction(1, "AAPL", -100, 7, 2)); //account 1 sells 100 shares of AAPL at 7
+    xml_requests.push_back(createMultiOrderCancelQueryTransaction(1, "AAPL", -100.1, 7.4, 2)); //account 1 sells 100 shares of AAPL at 7
     xml_requests.push_back(createMultiOrderCancelQueryTransaction(2, "AAPL", 100, 7, 4)); //account 1 sells 100 shares of AAPL at 7
     xml_requests.push_back(createQueryTransaction(1, 1));
 

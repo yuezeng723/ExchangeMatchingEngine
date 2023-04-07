@@ -100,7 +100,7 @@ bool sqlHandler::updateOpenOrder(int open_id, double shares, int version) {
     return true;
 }
 //execute order
-void sqlHandler::addExecuteOrder(int transaction_id, double shares, std::time_t time, double execute_price, double limit) {
+void sqlHandler::addExecuteOrder(int transaction_id, double shares, string time, double execute_price, double limit) {
   int sellAccount = getAccount(transaction_id);
   if(shares < 0) {
     updateAccount(sellAccount, -shares*execute_price);
@@ -110,16 +110,16 @@ void sqlHandler::addExecuteOrder(int transaction_id, double shares, std::time_t 
   stringstream sql;
   work W(*C);
   sql << "INSERT INTO executeorder (transaction_id, shares, time, execute_price) VALUES (" 
-  << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << "), " << execute_price << ");";
+  << transaction_id << "," << shares << ", " << W.quote(time) << ", " << execute_price << ");";
   W.exec(sql.str());
   W.commit();
 }
 //cancel order
-void sqlHandler::addCancelOrder(int transaction_id, double shares, std::time_t time) {
+void sqlHandler::addCancelOrder(int transaction_id, double shares, string time) {
     stringstream sql;
     work W(*C);
     sql << "INSERT INTO cancelorder (transaction_id, shares, time) VALUES (" 
-    << transaction_id << "," << shares << ", " << "to_timestamp(" << W.quote(time) << ")" << ");";
+    << transaction_id << "," << shares << ", " << W.quote(time) << ");";
     W.exec(sql.str());
     W.commit();
 }
@@ -220,8 +220,9 @@ int account_id, double currLimit) {
   double exVal = c[3].as<double>(); //execute value
   if(!updateOpenOrder(c[1].as<int>(), amount, c[4].as<int>())) return false;
   updatePosition(symbol, account_id, -shares);
-  addExecuteOrder(c[0].as<int>(), shares, std::time(nullptr), exVal, exVal);
-  addExecuteOrder(transaction_id, -shares, std::time(nullptr), exVal, currLimit);
+  std::time_t now = std::time(nullptr);
+  addExecuteOrder(c[0].as<int>(), shares, std::to_string(now), exVal, exVal);
+  addExecuteOrder(transaction_id, -shares, std::to_string(now), exVal, currLimit);
   return true;
 }
 //match the order
@@ -280,7 +281,7 @@ bool sqlHandler::doCancel(int transaction_id, int account_id) { //cancel shares 
   for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
     if(!deleteOpenOrder(c[0].as<int>(), c[4].as<int>())) return false;
     updateAccount(account_id, c[1].as<double>()*c[2].as<double>());
-    addCancelOrder(transaction_id, c[1].as<double>(), std::time(nullptr));
+    addCancelOrder(transaction_id, c[1].as<double>(), std::to_string(std::time(nullptr)));
   }
   return true;
 }

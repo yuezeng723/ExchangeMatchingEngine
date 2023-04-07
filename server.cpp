@@ -36,14 +36,14 @@ void Server::createTables() {
     "(execute_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
     "shares DECIMAL(10,2) NOT NULL,"
-    "time TIME,"
+    "time VARCHAR(30) NOT NULL,"
     "execute_price DECIMAL(10,2));";
   string cancelSQL =
     "CREATE TABLE CANCELORDER"
     "(cancel_id SERIAL PRIMARY KEY,"
     "transaction_id INT NOT NULL,"
     "shares DECIMAL(10,2) NOT NULL,"
-    "time TIME);";
+    "time VARCHAR(30) NOT NULL);";
 
   
   W.exec(accountSQL);
@@ -93,8 +93,6 @@ void Server::handleClient(int client_fd) {
 void Server::parseBuffer(sqlHandler * database, char* buffer, int size, string &response) {
   cout << "the request size is: " << size << endl;
   
-  std::time_t now = std::time(nullptr); // get the current time in seconds since the epoch
-  std::cout << "Current time in seconds since epoch: " << now << std::endl;
   stringstream bufferStream;
   bufferStream.write(buffer, size);
   string firstLine;
